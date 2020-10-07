@@ -1,34 +1,47 @@
-# Ib::Extensions
+# IB/Extensions
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/ib/extensions`. To experiment with that code, run `bin/console` for an interactive prompt.
+Helpers and Macros that ease the usage of the TWS-API of Interactive Brokers
 
-TODO: Delete this and the text above, and describe your gem
-
-## Installation
-
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'ib-extensions'
+to activate use
 ```
+gem 'ib-extensions',  git: 'https://github.com/ib-ruby/ib-extensions.git'
+```
+in the Gemfile and require the extensions as needed
 
-And then execute:
 
-    $ bundle install
+## Verify
+```
+require 'ib-api'
+require 'ib/verify'
+```
+Verifies a given contract, for details refer to the [wiki]( https://github.com/ib-ruby/ib-ruby/wiki/Contracts%3A-Create,-Verify-and-Store)
 
-Or install it yourself as:
+## Market Price
+```
+require 'ib-api'
+require 'ib/market-price'
+```
+Returns the most recent market-price of a given contract  [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Case-Study%3A-Get-Market-Price)
 
-    $ gem install ib-extensions
+## End of Day Data
+```
+require 'ib-api'
+require 'ib/eod'
+```
+Fetch historical data with just one line of code [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Historical-Data)
 
-## Usage
+## Gateway 
+```
+require 'ib-gateway'
+```
+IB::Gateway is an alternative to IB::Connection. Upon initialization, it detects active accounts and stores them in a thread safe array. 
+Details in the [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Gateway).
 
-TODO: Write usage instructions here
+Its used in [Simple Monitor](https://github.com/ib-ruby/simple-monitor)
 
-## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
 
 ## Contributing
 
