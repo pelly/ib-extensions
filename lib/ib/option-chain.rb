@@ -1,5 +1,5 @@
-require 'extensions/verify'
-require 'extensions/market-price'
+require 'ib/verify'
+require 'ib/market-price'
 module IB
 
   class Contract
