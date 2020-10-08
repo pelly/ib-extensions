@@ -8,6 +8,11 @@ gem 'ib-extensions',  git: 'https://github.com/ib-ruby/ib-extensions.git'
 ```
 in the Gemfile and require the extensions as needed
 
+## Include all
+```
+require 'ib-api'
+require 'ib/extensions'
+```
 
 ## Verify
 ```
