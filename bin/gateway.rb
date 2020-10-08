@@ -36,6 +36,13 @@ class Array
   end
 end # Array
 
+# read items from console.yml 
+read_yml = -> (key) do
+		YAML::load_file( File.expand_path('../console.yml',__FILE__))[key]
+	end
+
+
+
   puts 
   puts ">> I B – G A T E W A Y  Interactive Console <<" 
   puts '-'* 45
@@ -46,16 +53,17 @@ end # Array
  
   include IB
   require 'irb'
-  client_id = ARGV[1] || 3000
+  client_id = ARGV[1] || read_yml[:client_id]
   specified_port = ARGV[0] || 'Gateway'
 	port =  case specified_port
 					when Integer
 						specified_port  # just use the number
 					when /^[gG]/ 
-						4002
+						read_yml[:gateway]
 					when /^[Tt]/
-						7496
+						read_yml[:tws]
 					end
+
   ARGV.clear
   logger = Logger.new  STDOUT
   logger.formatter = proc do |level, time, prog, msg|
