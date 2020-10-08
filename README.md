@@ -63,7 +63,7 @@ s = IB::Strangle.build from: IB::Symbols::Index.stoxx,
                             expiry: 202103 
 
 ```
-and use the speads like any other contract. [wiki(https://github.com/ib-ruby/ib-ruby/wiki/Strangles,-Straddles-%26-Co)
+and use the speads like any other contract. [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Strangles,-Straddles-%26-Co)
 
 ## Gateway 
 ```
