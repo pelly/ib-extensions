@@ -1,3 +1,5 @@
+require 'alert/ib/base_alert'
+
 module IB
 class Alert
 	class << self
