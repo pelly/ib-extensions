@@ -50,7 +50,7 @@ puts  "Summary for a placement of #{buy_order.total_quantity} shares of #{wfc.to
 puts  '_' * 80
 puts  ""
 puts  "Available Cash (equity with loan) \t #{recieved_status[:equity_with_loan].to_f}"
-puts  "Margin requirements \t \t (init) #{recieved_status[:init_margin].to_f} \t (maint.) #{recieved_status[:maint_margin].to_f} "
+puts  "Margin usage after placement \t (init) #{recieved_status[:init_margin].to_f} \t (maint.) #{recieved_status[:maint_margin].to_f} "
 puts  "Commissions \t \t \t (min) #{recieved_status[:min_commission].to_f}  \t\t (max) #{recieved_status[:max_commission].to_f} "
 
 puts ""
