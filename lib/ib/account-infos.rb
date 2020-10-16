@@ -1,17 +1,19 @@
-module IB
-class Alert
-	class << self
-		def alert_2101 msg
-			logger.error {msg.message}
-			@status_2101 = msg.dup	
-		end
+require 'alerts/ib/base_alert'
 
-		def status_2101 account # resets status and raises IB::TransmissionError
-			error account.account + ": " +@status_2101.message, :reader unless @status_2101.nil?
-			@status_2101 = nil  # always returns nil 
+module IB
+	class Alert
+		class << self
+			def alert_2101 msg
+				logger.error {msg.message}
+				@status_2101 = msg.dup	
+			end
+
+			def status_2101 account # resets status and raises IB::TransmissionError
+				error account.account + ": " +@status_2101.message, :reader unless @status_2101.nil?
+				@status_2101 = nil  # always returns nil 
+			end
 		end
-	end
-end 
+	end 
 end #  module
 
 module AccountInfos

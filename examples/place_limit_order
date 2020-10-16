@@ -7,39 +7,38 @@ require 'bundler/setup'
 require 'ib-api'
 require 'ib/order-prototypes'
 
-# Only for Advisor accounts: you need to provide account_code such as U666777
+# you need to provide account_code such as DU666777
 account_code = ARGV[0] || ''
 #
 # First, connect to IB TWS. Arbitrary :client_id is used to identify your script
 ib = IB::Connection.new client_id: 1112  do | gw | #, :port => 7496 # TWS
 
 # Subscribe to TWS alerts/errors and order-related messages prior to the connection of the client
-  gw.subscribe(:Alert, :OpenOrder, :OrderStatus,  :ContractDataEnd, :ManagedAccounts ) { |msg| puts msg.to_human }
-  gw.subscribe(:ContractData ) do |msg| 
-    puts msg.contract.to_human + "\n"
-  end
+  gw.subscribe(:Alert, :OpenOrder, :OrderStatus,  :ManagedAccounts, :OpenOrderEnd ) { |msg| puts "recieved: #{msg.to_human }"}
 
 end
+
+puts "-" * 80
 wfc = IB::Stock.new symbol: 'WFC'
-ib.send_message :RequestContractData, id: 56, contract: wfc
 
 puts IB::Limit.summary
-puts "Supported Parameter \n -------------------------- "
+puts "Supported Parameter "
+puts "-" * 80
 puts IB::Limit.parameters
 buy_order = IB::Limit.order size: 100,
                           price: 1 + rand().round(2),
                           action:  :buy,
 													account: account_code
-puts buy_order.to_human
+puts "placing  #{buy_order.to_human} "
 ib.wait_for :NextValidId
 ib.place_order buy_order,  wfc
-ib.wait_for :ContractDataEnd, 5 #sec
 
+puts "requesting all open orders "
 ib.send_message :RequestAllOpenOrders
+ib.wait_for :OpenOrderEnd, 5 #sec
 
 puts "\n******** Press <Enter> to cancel... *********\n\n"
 STDIN.gets
-
 
 ## RUN ONLY ON A DEMO ACCOUNT
 #
