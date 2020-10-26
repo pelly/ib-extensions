@@ -1,5 +1,5 @@
 require 'main_helper'
-require 'symbols'
+require 'ib/symbols'
 
 RSpec.describe IB::Messages::Outgoing  do
 

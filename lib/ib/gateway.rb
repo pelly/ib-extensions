@@ -200,6 +200,8 @@ The Advisor is always the first account
 =begin
 Proxy for Connection#SendMessage
 allows reconnection if a socket_error occurs
+
+does NOT check the connection before sending a message.
 =end
 
   def send_message what, *args
@@ -242,18 +244,10 @@ Argument is either an order-object or a local_id
 
   def prepare_connection &b
     tws.disconnect if tws.is_a? IB::Connection
-    self.tws = IB::Connection.new  @connection_parameter do |c|
-    # the accounts-array keeps any account tranmitted first after connecting 
-    # the local_orders-Array keeps any recent order, that has a positive local_id
-	#		c.subscribe(:NextValidId) do |msg|
-	#			logger.progname = "Gateway#connect"
-	#			c.next_local_id = msg.local_id
-	#			logger.info { "Got next valid order id: #{next_local_id}." }
-#			end
-		end
+    self.tws = IB::Connection.new  @connection_parameter 
     @accounts = @local_orders = Array.new
 
-    # prepare Advisor-User hierachie
+    # prepare Advisor-User hierachy
     initialize_managed_accounts if @gateway_parameter[:s_m_a]
     initialize_alerts if @gateway_parameter[:s_a]
     initialize_order_handling if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d] 
@@ -261,7 +255,7 @@ Argument is either an order-object or a local_id
     ## i.e. after connection order-state events are fired if an open-order is pending
     ## a possible response is best defined before the connect-attempt is done
 		# ##  Attention
-		# ##  @accounts are not initialized yet
+		# ##  @accounts are not initialized yet (empty array)
     if block_given? 
       yield self 
     

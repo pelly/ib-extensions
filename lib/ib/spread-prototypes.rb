@@ -1,4 +1,4 @@
-
+require 'models/ib/spread'
 # These modules are used to facilitate referencing of most common Spreads 
 
 # Spreads are created in  two ways:
@@ -22,7 +22,8 @@ module IB
 
 
 		def initialize_spread ref_contract = nil, **attributes
-			attributes =  ref_contract.attributes.merge attributes if ref_contract.is_a?(IB::Contract)
+			error "Initializing of Spread failed – contract is missing" unless ref_contract.is_a?(IB::Contract)
+			attributes =  ref_contract.attributes.merge attributes
 			the_spread = nil
 			IB::Contract.new(attributes).verify do| c|	
 				the_spread= IB::Spread.new  c.attributes.slice( :exchange, :symbol, :currency )
@@ -58,3 +59,5 @@ require 'ib/spread_prototypes/straddle'
 require 'ib/spread_prototypes/strangle'
 require 'ib/spread_prototypes/vertical'
 require 'ib/spread_prototypes/calendar'
+require 'ib/spread_prototypes/stock-spread'
+require 'ib/spread_prototypes/butterfly'

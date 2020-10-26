@@ -1,5 +1,5 @@
 require 'main_helper'
-require 'symbols'
+require 'ib/symbols'
 
 RSpec.shared_examples_for 'HistoricalData message' do
   it { is_expected.to be_an IB::Messages::Incoming::HistoricalData }

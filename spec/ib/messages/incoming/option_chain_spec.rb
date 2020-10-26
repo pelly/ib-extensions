@@ -4,7 +4,7 @@ require 'contract_helper'  # provides request_con_id
 RSpec.shared_examples 'OptionChainDefinition Message' do 
 	subject{ the_message }
   it { is_expected.to be_an IB::Messages::Incoming::OptionChainDefinition }
-#	it "print it" doa  # debug
+#	it "print it" do  # debug
 #		puts subject.inspect
 #	end
   its(:message_type) { is_expected.to eq :OptionChainDefinition }

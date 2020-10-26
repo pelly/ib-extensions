@@ -13,6 +13,7 @@ require 'yaml'
 require 'logger'
 require "ib-api"
 require 'ib/extensions'
+require 'ib/symbols'
 
 class Array
   # enables calling members of an array. which are hashes  by it name

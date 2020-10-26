@@ -15,7 +15,7 @@ module IB
 #   IB::Calendar.fabricate  an_option, the_other_expiry
 			def fabricate master, the_other_expiry
 
-				error "Argument must be a IB::Future or IB::Option" unless master.is_a? IB::Future || master.is_a?( IB::Future )
+				error "Argument must be a IB::Future or IB::Option" unless master.is_a? IB::Option || master.is_a?( IB::Future )
 
 				initialize_spread( master ) do | the_spread |
 					the_spread.add_leg master, action: :buy

@@ -1,5 +1,5 @@
 require 'main_helper'
-require 'symbols'
+require 'ib/symbols'
 
 shared_examples_for 'HistogramData message' do
   it { is_expected.to be_an IB::Messages::Incoming::HistogramData }

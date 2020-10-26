@@ -42,11 +42,17 @@ RSpec.shared_examples 'a valid Estx Combo' do
 		its( :symbol )   { should eq "ESTX50" }
 		its( :market_price )   { should be_a Numeric }
 end
-
 RSpec.shared_examples 'a valid ES-FUT Combo' do
 
 		its( :exchange ) { should eq 'GLOBEX' }
 		its( :symbol )   { should eq "ES" }
+		its( :market_price )   { should be_a Numeric }
+end
+
+RSpec.shared_examples 'a valid NQ-FUT Combo' do
+
+		its( :exchange ) { should eq 'GLOBEX' }
+		its( :symbol )   { should eq "NQ" }
 		its( :market_price )   { should be_a Numeric }
 end
 RSpec.shared_examples 'a valid ZN-FUT Combo' do

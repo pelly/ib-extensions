@@ -51,39 +51,79 @@ RSpec.shared_examples_for "Alert message" do | the_expected_message |
 			end
 end
 
-
-RSpec.shared_examples_for 'OpenOrder message' do
-#	let( :subject ){ the_returned_message }
-  it { is_expected.to be_an IB::Messages::Incoming::OpenOrder }
-	it "has appropiate attributes" do
-		o = subject
-   expect(o.message_type).to eq :OpenOrder 
-   expect( o.message_id).to eq 5 
-	 expect( o.version).to eq 34
-	 expect( o.data).not_to  be_empty
-   expect( o.buffer ).to be_empty   # Work on openOrder-Message has to be finished.
+shared_examples_for 'OpenOrder message' do
+  it { should be_an IB::Messages::Incoming::OpenOrder }
+  its(:message_type) { is_expected.to eq :OpenOrder }
+  its(:message_id) { is_expected.to eq 5 }
+  its(:version) { is_expected.to eq 34}
+  its(:data) { is_expected.not_to  be_empty }
+  its(:buffer ) { is_expected.to be_empty }  # Work on openOrder-Message has to be finished.
   							## Integration of Conditions !
-   expect( o.local_id).to be_an Integer 
-	 expect( o.order).to be_an IB::Order 
-   expect( o.status).to match( /Submit/).or match( /Filled/ ) 
-  #its(:to_human) { is_expected.to match /<OpenOrder: <Stock: WFC USD> <Order: LMT DAY buy 100.0 49.13 .*Submit.* #\d+\/\d+ from 1111/ }
-	end
+  its(:local_id) { is_expected.to be_an Integer }
+  its(:status) { is_expected.to match /Submit/ }
+  its(:to_human) { is_expected.to match /<OpenOrder/ }
+
+
   it 'has proper order accessor' do
     o = subject.order
-    expect( o.client_id ).to eq(OPTS[:connection][:client_id]).or be_zero 
+    expect( o ).to be_an IB::Order
+    expect( o.client_id ).to eq(1111).or eq(2111)
     expect( o.parent_id ).to be_zero
+    expect( o.local_id ).to be_an Integer
+    expect( o.perm_id ).to  be_an Integer
+    expect(IB::VALUES[:clearing_intent].values). to include o.clearing_intent
+    expect( o.order_type ).to eq :limit
+    expect( IB::VALUES[:tif].values ).to include o.tif
+    #expect( o.status ).to match /Submit/
+    expect( o.clearing_intent ).to eq :ib
   end
 
   it 'has proper order_state accessor' do
     os = subject.order_state
     expect(os.local_id).to be_an Integer
     expect(os.perm_id).to  be_an Integer 
-    expect(os.perm_id.to_s).to  match  /^\d{8,11}$/   # has 9 to 11 numeric characters
-    expect(os.client_id).to eq( OPTS[:connection][:client_id] ).or be_zero
+    expect(os.perm_id.to_s).to  match  /^\d{9,11}$/   # has 9 to 11 numeric characters
+    expect(os.client_id).to eq(1111).or eq(2111)
     expect(os.parent_id).to be_zero
+    expect(os.submitted?).to be_truthy
   end
+
+
 end
 
+
+#RSpec.shared_examples_for 'OpenOrder message' do
+##	let( :subject ){ the_returned_message }
+#  it { is_expected.to be_an IB::Messages::Incoming::OpenOrder }
+#	it "has appropiate attributes" do
+#		o = subject
+#   expect(o.message_type).to eq :OpenOrder 
+#   expect( o.message_id).to eq 5 
+#	 expect( o.version).to eq 34
+#	 expect( o.data).not_to  be_empty
+#   expect( o.buffer ).to be_empty   # Work on openOrder-Message has to be finished.
+#  							## Integration of Conditions !
+#   expect( o.local_id).to be_an Integer 
+#	 expect( o.order).to be_an IB::Order 
+#   expect( o.status).to match( /Submit/).or match( /Filled/ ) 
+#  #its(:to_human) { is_expected.to match /<OpenOrder: <Stock: WFC USD> <Order: LMT DAY buy 100.0 49.13 .*Submit.* #\d+\/\d+ from 1111/ }
+#	end
+#  it 'has proper order accessor' do
+#    o = subject.order
+#    expect( o.client_id ).to eq(OPTS[:connection][:client_id]).or be_zero 
+#    expect( o.parent_id ).to be_zero
+#  end
+#
+#  it 'has proper order_state accessor' do
+#    os = subject.order_state
+#    expect(os.local_id).to be_an Integer
+#    expect(os.perm_id).to  be_an Integer 
+#    expect(os.perm_id.to_s).to  match  /^\d{9,11}$/   # has 9 to 11 numeric characters
+##    expect(os.client_id).to eq( OPTS[:connection][:client_id] ).or be_zero  ## no use if random client_id is used
+#    expect(os.parent_id).to be_zero
+#  end
+#end
+#
 
 RSpec.shared_examples_for 'Placed Order' do
 
@@ -101,10 +141,10 @@ RSpec.shared_examples_for 'Placed Order' do
 			expect( IB::VALUES[:tif].values ).to include subject.tif
 		end
 		its( :clearing_intent ){is_expected.to eq :ib }
-		it "mysterious trailing stop price is absent", :pending => true do
-			pending "seems to be irrelevant, but needs clarification"
-			expect( subject.trail_stop_price  ).to be_nil.or be_zero
-		end
+#		it "mysterious trailing stop price is absent", :pending => true do
+#			pending "seems to be irrelevant, but needs clarification"
+#			expect( subject.trail_stop_price  ).to be_nil.or be_zero
+#		end
 #	end
 end
 
@@ -120,10 +160,10 @@ RSpec.shared_examples_for 'Presubmitted what-if Order' do | used_contract |
 	its( :equity_with_loan  ){ is_expected.to be_a( BigDecimal ).and be > 0 } 
 	its( :init_margin  ){ is_expected.to be_a( BigDecimal ).and be > 0 }
 	its( :maint_margin ){ is_expected.to be_a( BigDecimal ).and be > 0 }
-	it "mysterious trailing stop price is absent", pending: true do
-		pending "seems to be irrelevant, but needs clarification"
-		expect( subject.trail_stop_price ).to be_nil.or be_zero
-	end
+#	it "mysterious trailing stop price is absent", pending: true do
+#		pending "seems to be irrelevant, but needs clarification"
+#		expect( subject.trail_stop_price ).to be_nil.or be_zero
+#	end
 
 end
 
@@ -132,10 +172,10 @@ RSpec.shared_examples_for 'Filled Order' do
 #		its( :average_fill_price ){ is_expected.not_to be_nil.or be_zero }
 #		its( :average_fill_price ){is_expected.to be_a BigDecimal  }
 		its( :status ) { is_expected.to eq 'Filled' }
-		it "mysterious trailing stop price is absent", pending: true do
-			pending "seems to be irrelevant, but needs clarification"
-			expect( subject.trail_stop_price ).to be_nil.or be_zero
-		end
+#		it "mysterious trailing stop price is absent", pending: true do
+#			pending "seems to be irrelevant, but needs clarification"
+#			expect( subject.trail_stop_price ).to be_nil.or be_zero
+#		end
 end
 
 
@@ -150,7 +190,7 @@ RSpec.shared_examples_for "Proper Execution Record" do | side |
   expect(  exec.client_id).to eq( OPTS[:connection][:client_id] ).or be_zero
   expect(  exec.local_id).to be_an Integer
   expect(  exec.exec_id).to be_a String
-  expect(  exec.time).to match /\d\d:\d\d:\d\d/
+  expect(  exec.time).to be_a DateTime
   expect(  exec.account_name).to eq OPTS[:connection][:account]
   expect(  exec.exchange).to eq contract.exchange
   expect(  exec.side).to eq side
