@@ -28,7 +28,7 @@ Verifies a given contract, for details refer to the [documentation](https://ib-r
 require 'ib-api'
 require 'ib/market-price'
 ```
-Returns the most recent market-price of a given contract  [documentation](https://ib-ruby.github.io/ib-doc/market_price.html)
+Returns the most recent market-price of a given contract  ( [documentation](https://ib-ruby.github.io/ib-doc/market_price.html) )
 
 ## Historical Data (EOD)
 ```
