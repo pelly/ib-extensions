@@ -2,6 +2,8 @@
 
 Helpers and Macros that ease the usage of the TWS-API of Interactive Brokers
 
+__Documentation: [https://ib-ruby.github.io/ib-doc/](https://ib-ruby.github.io/ib-doc/)__   _(Work in progress)
+
 to activate use
 ```
 gem 'ib-extensions',  git: 'https://github.com/ib-ruby/ib-extensions.git'
