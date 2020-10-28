@@ -2,6 +2,8 @@
 
 Helpers and Macros that ease the usage of the TWS-API of Interactive Brokers
 
+__Documentation: [https://ib-ruby.github.io/ib-doc/](https://ib-ruby.github.io/ib-doc/)__   _(Work in progress)
+
 to activate use
 ```
 gem 'ib-extensions',  git: 'https://github.com/ib-ruby/ib-extensions.git'
@@ -19,14 +21,14 @@ require 'ib/extensions'
 require 'ib-api'
 require 'ib/verify'
 ```
-Verifies a given contract, for details refer to the [wiki]( https://github.com/ib-ruby/ib-ruby/wiki/Contracts%3A-Create,-Verify-and-Store)
+Verifies a given contract, for details refer to the [documentation](https://ib-ruby.github.io/ib-doc/Verify_contracts.html )
 
 ## Market Price
 ```
 require 'ib-api'
 require 'ib/market-price'
 ```
-Returns the most recent market-price of a given contract  [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Case-Study%3A-Get-Market-Price)
+Returns the most recent market-price of a given contract  ( [documentation](https://ib-ruby.github.io/ib-doc/market_price.html) )
 
 ## Historical Data (EOD)
 ```
