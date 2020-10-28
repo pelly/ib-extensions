@@ -1,9 +1,21 @@
+
+module CoreExtensions
+  module Array
+    module DuplicatesCounter
+      def count_duplicates
+        self.each_with_object(Hash.new(0)) { |element, counter| counter[element] += 1 }.sort_by{|k,v| -v}.to_h
+      end
+    end
+  end
+end
+
+Array.include CoreExtensions::Array::DuplicatesCounter
 module IB
 
 
 	
  class Contract
-# Ask for the Market-Price and store item in IB::Contract.misc
+# Ask for the Market-Price 
 # 
 # For valid contracts, either bid/ask or last_price and close_price are transmitted.
 # 
@@ -15,16 +27,16 @@ module IB
 # 
 # The result can be costomized by a provided block.
 # 
-# 	IB::Symbols::Stocks.sie.market_price{ |x| puts x.inspect; x[:last] }.to_f
+# 	IB::Symbols::Stocks.sie.market_price{ |x| x }
 # 	-> {"bid"=>0.10142e3, "ask"=>0.10144e3, "last"=>0.10142e3, "close"=>0.10172e3}
-# 	-> 101.42 
+#  
 # 
 # assigns IB::Symbols.sie.misc with the value of the :last (or delayed_last) TickPrice-Message
 # and returns this value, too
 			def market_price delayed:  true, thread: false
 
 				tws=  Connection.current 		 # get the initialized ib-ruby instance
-				the_id =  nil
+				the_id , the_price =  nil, nil
 				tickdata =  Hash.new
 				# define requested tick-attributes
 				last, close, bid, ask	 = 	[ [ :delayed_last , :last_price ] , [:delayed_close , :close_price ],
@@ -60,7 +72,7 @@ module IB
 							tz = -> (z){ z.map{|y| y.to_s.split('_')}.flatten.count_duplicates.max_by{|k,v| v}.first.to_sym}
 							data =  tickdata.map{|x,y| [tz[x],y]}.to_h
 							valid_data = ->(d){ !(d.to_i.zero? || d.to_i == -1) }
-							self.misc = if block_given? 
+							the_price = if block_given? 
 														yield data 
 														# yields {:bid=>0.10142e3, :ask=>0.10144e3, :last=>0.10142e3, :close=>0.10172e3}
 													else # behavior if no block is provided
@@ -74,6 +86,7 @@ module IB
 															nil
 														end
 													end
+							self.misc =  the_price if thread  # store internally if in thread modus
 						end
 					rescue Timeout::Error
 						Connection.logger.info{ "#{to_human} --> No Marketdata recieved " }
@@ -84,7 +97,7 @@ module IB
 					th		# return thread
 				else
 					th.join
-					misc	# return 
+					the_price	# return 
 				end
 			end #
 

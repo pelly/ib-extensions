@@ -41,10 +41,11 @@ module IB
 											 fields[:expiry] = from.expiry unless fields.key?(:expiry)
 											 fields[:multiplier] = from.multiplier unless fields.key?(:multiplier) || from.multiplier.to_i.zero?
 											 details =  nil
-											 from.verify{|c| details = c.contract_detail }
-											 IB::Contract.new( con_id: details.under_con_id, 
-																				currency: from.currency)
-																			 .verify!
+											 v = from.verify.first
+											 IB::Contract.new( con_id: v.details.under_con_id, 
+																				exchange: v.currency)
+																			 .verify
+																			 .first
 																			 .essential
 										 else
 											 from

@@ -1,5 +1,5 @@
 module IB
-
+require 'active_support/core_ext/date/calculations'
 	module BuisinesDays
 		#		https://stackoverflow.com/questions/4027768/calculate-number-of-business-days-between-two-days
 
@@ -53,7 +53,7 @@ module IB
 	class Contract
 		# Receive EOD-Data 
 		#  
-		# The Enddate has to be specified (as Date Object)
+		# The Enddate has to be specified (as Date Object), t
 		#
 		# The Duration can either be specified as Sting " yx D" or as Integer. 
 		# Altenative a start date can be specified with the :start parameter.
@@ -64,15 +64,9 @@ module IB
 		#   :historical_volatility, :option_implied_volatility,
 		#   :option_volume, :option_open_interest
 		# 
-		# The results are available through a block, thus
+		# The results can be preprocessed through a block, thus
 		#  
-		#     contract =  IB::Symbols::Index.stoxx.verify!
-		#		  contract.eod( duration: '10 d' ) do | results |
-		#		    results.each{ |s| puts s.to_human }
-		#		  end
-		#		   
-		#
-		#   Symbols::Index::stoxx.verify!.eod( duration: '10 d',  to: Date.today){|y| y.each{|z| puts z.to_human}}
+		# puts IB::Symbols::Index::stoxx.eod( duration: '10 d')){|r| r.to_human}
 		#   <Bar: 2019-04-01 wap 0.0 OHLC 3353.67 3390.98 3353.67 3385.38 trades 1750 vol 0>
 		#   <Bar: 2019-04-02 wap 0.0 OHLC 3386.18 3402.77 3382.84 3395.7 trades 1729 vol 0>
 		#   <Bar: 2019-04-03 wap 0.0 OHLC 3399.93 3435.9 3399.93 3435.56 trades 1733 vol 0>
@@ -81,32 +75,43 @@ module IB
 		#   <Bar: 2019-04-08 wap 0.0 OHLC 3446.15 3447.08 3433.47 3438.06 trades 1648 vol 0>
 		#   <Bar: 2019-04-09 wap 0.0 OHLC 3437.07 3450.69 3416.67 3417.22 trades 1710 vol 0>
 		#   <Bar: 2019-04-10 wap 0.0 OHLC 3418.36 3435.32 3418.36 3424.65 trades 1670 vol 0>
-		#   eBar: 2019-04-11 wap 0.0 OHLC 3430.73 3442.25 3412.15 3435.34 trades 1773 vol 0>
+		#   <Bar: 2019-04-11 wap 0.0 OHLC 3430.73 3442.25 3412.15 3435.34 trades 1773 vol 0>
 		#   <Bar: 2019-04-12 wap 0.0 OHLC 3432.16 3454.77 3425.84 3447.83 trades 1715 vol 0>
 		#
-		#    Symbols::Futures::mini_dax.eod( duration: '10 d',  to: Date.today){|y| y.each{|z| puts z.to_human}}
-		#   <Bar: 2020-09-23 wap 12703.4 OHLC 12647.0 12809.0 12506.0 12631.0 trades 28125 vol 44456>
-		#   <Bar: 2020-09-24 wap 12575.5 OHLC 12502.0 12674.0 12439.0 12583.0 trades 42847 vol 63952>
-		#   <Bar: 2020-09-25 wap 12456.2 OHLC 12645.0 12693.0 12317.0 12421.5 trades 32886 vol 51720>
-		#   <Bar: 2020-09-28 wap 12766.9 OHLC 12556.0 12866.0 12543.0 12849.0 trades 23649 vol 37770>
-		#   <Bar: 2020-09-29 wap 12791.0 OHLC 12881.0 12929.0 12718.0 12797.0 trades 29808 vol 43414>
-		#   <Bar: 2020-09-30 wap 12762.25 OHLC 12829.0 12880.0 12668.0 12779.0 trades 40230 vol 59884>
-		#   <Bar: 2020-10-01 wap 12737.45 OHLC 12774.0 12842.0 12651.0 12692.5 trades 35234 vol 53122>
-		#   <Bar: 2020-10-02 wap 12606.55 OHLC 12683.0 12723.0 12520.0 12662.0 trades 40192 vol 61242>
-		#   <Bar: 2020-10-05 wap 12772.05 OHLC 12767.0 12874.0 12709.0 12820.0 trades 25390 vol 37778>
-		#   <Bar: 2020-10-06 wap 12856.7 OHLC 12855.0 12950.0 12759.0 12899.5 trades 32128 vol 47322>
+		# puts Symbols::Stocks.wfc.eod(  start: Date.new(2019,10,9), duration: 3 ) 
+		#		<Bar: 2020-10-23 wap 23.3675 OHLC 23.55 23.55 23.12 23.28 trades 5778 vol 50096>
+		#		<Bar: 2020-10-26 wap 22.7445 OHLC 22.98 22.99 22.6 22.7 trades 6873 vol 79560>
+		#		<Bar: 2020-10-27 wap 22.086 OHLC 22.55 22.58 21.82 21.82 trades 7503 vol 97691>
+
+		# puts Symbols::Stocks.wfc.eod(  to: Date.new(2019,10,9), duration: 3 ) 
+		#		<Bar: 2019-10-04 wap 48.964 OHLC 48.61 49.25 48.54 49.21 trades 9899 vol 50561>
+		#		<Bar: 2019-10-07 wap 48.9445 OHLC 48.91 49.29 48.75 48.81 trades 10317 vol 50189>
+		#		<Bar: 2019-10-08 wap 47.9165 OHLC 48.25 48.34 47.55 47.82 trades 12607 vol 53577>
+		#
 		def eod start:nil, to: Date.today, duration: nil , what: :trades 
 
 			tws = IB::Connection.current
 			recieved =  Queue.new
-
-			tws.subscribe(IB::Messages::Incoming::HistoricalData) do |msg|
+			r = nil
+      # the hole response is transmitted at once! 
+			a= tws.subscribe(IB::Messages::Incoming::HistoricalData) do |msg|
 				if msg.request_id == con_id
 					#					msg.results.each { |entry| puts "  #{entry}" }
-					yield msg.results if block_given?
+					r = block_given? ?  msg.results.map{|y| yield y} : msg.results
 				end
 				recieved.push Time.now
 			end
+			b = tws.subscribe( IB::Messages::Incoming::Alert) do  |msg|
+				if msg.code == 321
+					tws.logger.info msg.message
+				elsif msg.code == 162  # Historical Market Data Service error 
+					tws.logger.info msg.message
+				else
+					tws.logger.error "Unhandled Alert #{msg.inspect}"
+				end
+				recieved =[]
+		  end
+			
 
 			duration =  if duration.present?
 										duration.is_a?(String) ? duration : duration.to_s + " D"
@@ -134,6 +139,11 @@ module IB
 					sleep 0.1
 					break if recieved.empty?  # finish if no more data received
 				end
+			tws.unsubscribe a
+			tws.unsubscribe b
+
+			r  #  the collected result
+
 			end
 		end # def
 	end  # class
