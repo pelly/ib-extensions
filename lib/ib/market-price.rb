@@ -19,13 +19,13 @@ module IB
 # 
 # For valid contracts, either bid/ask or last_price and close_price are transmitted.
 # 
-# If last_price is recieved, its returned. 
+# If last_price is received, its returned. 
 # If not, midpoint (bid+ask/2) is used. Else the closing price will be returned.
 # 
 # Any  value (even 0.0) which is stored in IB::Contract.misc indicates that the contract is 
 # accepted by `place_order`.
 # 
-# The result can be costomized by a provided block.
+# The result can be customized by a provided block.
 # 
 # 	IB::Symbols::Stocks.sie.market_price{ |x| x }
 # 	-> {"bid"=>0.10142e3, "ask"=>0.10144e3, "last"=>0.10142e3, "close"=>0.10172e3}
@@ -61,7 +61,7 @@ module IB
 						end if  msg.ticker_id == the_id 
 					end
 					# initialize »the_id« that is used to identify the received tick messages
-					# by fireing the market data request
+					# by firing the market data request
 					the_id = tws.send_message :RequestMarketData,  contract: self , snapshot: true 
 
 					begin
@@ -89,7 +89,7 @@ module IB
 							self.misc =  the_price if thread  # store internally if in thread modus
 						end
 					rescue Timeout::Error
-						Connection.logger.info{ "#{to_human} --> No Marketdata recieved " }
+						Connection.logger.info{ "#{to_human} --> No Marketdata received " }
 					end
 					tws.unsubscribe sub_id, s_id, e_id
 				end

@@ -102,14 +102,13 @@ require 'active_support/core_ext/date/calculations'
 				recieved.push Time.now
 			end
 			b = tws.subscribe( IB::Messages::Incoming::Alert) do  |msg|
-				if msg.code == 321
+				if [321,162,200].include? msg.code
 					tws.logger.info msg.message
-				elsif msg.code == 162  # Historical Market Data Service error 
-					tws.logger.info msg.message
-				else
-					tws.logger.error "Unhandled Alert #{msg.inspect}"
+					# TWS Error 200: No security definition has been found for the request
+					# TWS Error 354: Requested market data is not subscribed.
+				  # TWS Error 162  # Historical Market Data Service error 
+					recieved =[]
 				end
-				recieved =[]
 		  end
 			
 

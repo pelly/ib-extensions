@@ -10,9 +10,8 @@
 
 require 'bundler/setup'
 require 'ib/symbols'
-require 'yaml'
-require 'ib/symbols'
 require 'ib/market-price'
+require 'yaml'
 
 # First, connect to IB TWS and subscribe for events. 
 ib = IB::Connection.new :client_id => 1112  do | gw | #, :port => 7497 # TWS

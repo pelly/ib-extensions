@@ -16,7 +16,7 @@ require 'ib/verify'
 require 'ib/market-price'
 require 'ib/option-chain'
 require 'ib/eod'
-
+require 'ib/account'
 class Array
   # enables calling members of an array. which are hashes  by it name
   # i.e
