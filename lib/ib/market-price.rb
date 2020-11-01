@@ -31,6 +31,11 @@ module IB
 # 	-> {"bid"=>0.10142e3, "ask"=>0.10144e3, "last"=>0.10142e3, "close"=>0.10172e3}
 #  
 # 
+#  raw-data are stored in the _bars_-attribute of IB::Contract 
+#  (volatile, ie. data are not preserved when the Object is copied)
+#  
+#
+#
 # assigns IB::Symbols.sie.misc with the value of the :last (or delayed_last) TickPrice-Message
 # and returns this value, too
 			def market_price delayed:  true, thread: false
@@ -72,6 +77,7 @@ module IB
 							tz = -> (z){ z.map{|y| y.to_s.split('_')}.flatten.count_duplicates.max_by{|k,v| v}.first.to_sym}
 							data =  tickdata.map{|x,y| [tz[x],y]}.to_h
 							valid_data = ->(d){ !(d.to_i.zero? || d.to_i == -1) }
+							self.bars << data											#  store raw data in bars
 							the_price = if block_given? 
 														yield data 
 														# yields {:bid=>0.10142e3, :ask=>0.10144e3, :last=>0.10142e3, :close=>0.10172e3}
