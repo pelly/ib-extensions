@@ -19,11 +19,11 @@ Everything is carried out in a mutex-synchonized environment
 			yield order if order.present?
 		end 
 	end
-  def initialize_order_handling
+	def initialize_order_handling
 		tws.subscribe( :CommissionReport, :ExecutionData, :OrderStatus, :OpenOrder, :OpenOrderEnd, :NextValidId ) do |msg| 
 			logger.progname = 'Gateway#order_handling'
 			case msg
-	
+
 			when IB::Messages::Incoming::CommissionReport
 				# Commission-Reports are not assigned to a order -  
 				logger.info "CommissionReport -------#{msg.exec_id} :...:C: #{msg.commission} :...:P/L: #{msg.realized_pnl}-"
@@ -45,10 +45,10 @@ Everything is carried out in a mutex-synchonized environment
 					# make open order equal to IB::Spreads (include negativ con_id)
 					msg.contract[:con_id] = -msg.contract.combo_legs.map{|y| y.con_id}.sum  if msg.contract.is_a? IB::Bag
 					msg.contract.orders.update_or_create msg.order, :local_id
-						this_account.contracts.first_or_create msg.contract, :con_id
+					this_account.contracts.first_or_create msg.contract, :con_id
 					# now save the order-record
-						msg.order.contract = msg.contract
-						this_account.orders.update_or_create msg.order, :local_id
+					msg.order.contract = msg.contract
+					this_account.orders.update_or_create msg.order, :local_id
 				end
 
 				#     update_ib_order msg  ## aus support 
@@ -65,17 +65,17 @@ Everything is carried out in a mutex-synchonized environment
 					if  msg.execution.cumulative_quantity.to_i == o.total_quantity.abs
 						logger.info{ "#{o.account} --> #{o.contract.symbol}: Execution completed" }
 						o.order_states.first_or_create(  IB::OrderState.new( perm_id: o.perm_id, local_id: o.local_id,
-						
+
 																																status: 'Filled' ),  :status )
-							# update portfoliovalue
+						# update portfoliovalue
 						a = @accounts.detect{|x| x.account == o.account } #  we are in a mutex controlled environment
-						 pv =  a.portfolio_values.detect{|y| y.contract.con_id == o.contract.con_id}
-						 change =  o.action == :sell ? -o.total_quantity : o.total_quantity
-						 if pv.present?
-						 pv.update_attribute :position,  pv.position + change
-						 else
-							 a.portfolio_values << IB::PortfolioValue.new( position: change, contract: o.contract)
-						 end
+						pv =  a.portfolio_values.detect{|y| y.contract.con_id == o.contract.con_id}
+						change =  o.action == :sell ? -o.total_quantity : o.total_quantity
+						if pv.present?
+							pv.update_attribute :position,  pv.position + change
+						else
+							a.portfolio_values << IB::PortfolioValue.new( position: change, contract: o.contract)
+						end
 					else
 						logger.debug{ "#{o.account} --> #{o.contract.symbol}: Execution not completed (#{msg.execution.cumulative_quantity.to_i}/#{o.total_quantity.abs})" }
 					end  # branch
