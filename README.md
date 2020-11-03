@@ -48,9 +48,9 @@ order = IB::Limit.order size: 100, price: 10, action: :buy
 order = IB::StopLimit.order size: 100, price: 10, stop_price: 9.5
 ```
 
-then transmit the order through  the `place_order` method of IB::Connection (or IB::Gateway)
+then transmit the order through  the [place_order](https://ib-ruby.github.io/ib-doc/order_placement.html)  method of IB::Connection or  Account-based  preview, place, modify and cancel methods of [IB::Gateway](https://ib-ruby.github.io/ib-doc/order_placement.html).
 
-More details in the [documentation](https://ib-ruby.github.io/ib-doc/order_prototypes.html) )
+More details in the [documentation](https://ib-ruby.github.io/ib-doc/order_prototypes.html) 
 
 
 ## Spread Prototypes
