@@ -87,44 +87,47 @@ class Gateway
   
 
 =begin
-ActiveAccounts returns a list of Account-Objects 
-Thus orders can be verified in a FA-environment.
+clients returns a list of Account-Objects 
 
-If only one Account is transmitted,  User and Advisor are identical.
+If only one Account is present,  Client and Advisor are identical.
 
-(returns an empty array if the array is not initialized, eg not connected)
 =end
-  def active_accounts
-     @accounts.find_all{|x| x.user? && x.connected }
-  end
-	
-=begin
-ForActiveAccounts enables a thread-safe access to account-data
-=end
-
-  def for_active_accounts &b
-    active_accounts.map{|y| for_selected_account y.account,  &b }
-  end
-=begin
-ForSelectAccount provides  an Account-Object-Environment 
-(with AccountValues, Portfolio-Values, Contracts and Orders)
-to deal with in the specifed block.
-
-It returns an Array of the return-values of the block
-=end
-
-  def for_selected_account account_or_id
-		sa = account_or_id.is_a?(IB::Account) ? account_or_id :  @accounts.detect{|x| x.account == account_or_id }
-    @account_lock.synchronize do
-      yield sa if block_given? && sa.is_a?( IB::Account )
-    end
+  def  clients
+     @accounts.find_all &:user? 
   end
 =begin
 The Advisor is always the first account
-(returns nil if the array is not initialized, eg not connected)
 =end
   def advisor
     @accounts.first
+  end
+	
+=begin
+account_data provides a thread-safe access to linked content of accounts
+
+(AccountValues, Portfolio-Values, Contracts and Orders)
+
+It returns an Array of the return-values of the block
+
+If called without a parameter, all clients are accessed
+=end
+
+  def account_data account_or_id=nil
+ 
+		safe = ->(account) do
+			@account_lock.synchronize do
+				yield account 
+			end
+		end
+	
+    if block_given?
+			if account_or_id.present?
+				sa = account_or_id.is_a?(IB::Account) ? account_or_id :  @accounts.detect{|x| x.account == account_or_id }
+				safe[sa] if sa.is_a? IB::Account
+			else
+				clients.map{|sa| safe[sa]}
+      end
+		end
   end
 
   def initialize  port: 4002, # 7497, 
@@ -132,7 +135,7 @@ The Advisor is always the first account
 		  client_id:  random_id,
 		  subscribe_managed_accounts: true, 
 		  subscribe_alerts: true, 
-		  subscribe_order_messages: true, 
+			subscribe_order_messages: true, 
 		  connect: true, 
 		  get_account_data: false,
 		  serial_array: false, 
@@ -327,7 +330,7 @@ Its always active.
   def initialize_managed_accounts
 		rec_id = tws.subscribe( :ReceiveFA )  do |msg|
 			msg.accounts.each do |a|
-				for_selected_account( a.account  ){| the_account | the_account.update_attribute :alias, a.alias } unless a.alias.blank?
+				account_data( a.account  ){| the_account | the_account.update_attribute :alias, a.alias } unless a.alias.blank?
 			end
 			logger.info { "Accounts initialized \n #{@accounts.map( &:to_human  ).join " \n " }" }
 		end

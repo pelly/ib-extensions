@@ -71,6 +71,10 @@ module IB
 
 					begin
 						# todo implement config-feature to set timeout in configuration   (DRY-Feature)
+						# Alternative zu Timeout
+						# Thread.new do 
+            #     i=0; loop{ i+=1; sleep 0.1; break if finalize || i > 1000 }
+
 						Timeout::timeout(5) do   # max 5 sec.
 							loop{ break if finalize ; sleep 0.1 } 
 							# reduce :close_price delayed_close  to close a.s.o 

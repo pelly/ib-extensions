@@ -3,7 +3,7 @@ module IB
 	class Account 
 
 
-		def simple_account_data_scan search_key, search_currency=nil
+		def account_data_scan search_key, search_currency=nil
 			if account_values.is_a? Array
 				if search_currency.present? 
 					account_values.find_all{|x| x.key.match( search_key )  && x.currency == search_currency.upcase }

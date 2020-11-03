@@ -10,7 +10,7 @@ The order is identified by local_id and perm_id
 Everything is carried out in a mutex-synchonized environment
 =end
 	def update_order_dependent_object order_dependent_object  # :nodoc:
-		for_active_accounts do  | a | 
+		  account_data  do  | a | 
 			order = if order_dependent_object.local_id.present?
 								a.locate_order( :local_id => order_dependent_object.local_id)
 							else
@@ -40,7 +40,7 @@ Everything is carried out in a mutex-synchonized environment
 
 			when IB::Messages::Incoming::OpenOrder
 				## todo --> handling of bags --> no con_id
-				for_selected_account(msg.order.account) do | this_account |
+				account_data(msg.order.account) do | this_account |
 					# first update the contracts
 					# make open order equal to IB::Spreads (include negativ con_id)
 					msg.contract[:con_id] = -msg.contract.combo_legs.map{|y| y.con_id}.sum  if msg.contract.is_a? IB::Bag
@@ -97,7 +97,7 @@ Everything is carried out in a mutex-synchonized environment
 
 		exit_condition = false
 		subscription = tws.subscribe(  :OpenOrderEnd ){ exit_condition = true }
-		for_active_accounts{| account | account.orders=[] }
+		account_data{| account | account.orders=[] }
 		send_message :RequestAllOpenOrders
 		Timeout::timeout(1, IB::TransmissionError,"OpenOrders not received" ) do
 			loop{  sleep 0.1; break if exit_condition  }
@@ -121,7 +121,7 @@ module IB
 
 		def self.alert_202 msg
 			# do anything in a secure mutex-synchronized-environment
-			any_order = IB::Gateway.current.for_active_accounts do | account |
+			any_order = IB::Gateway.current.account_data do | account |
 				order= account.locate_order( local_id: msg.error_id )
 				if order.present? && ( order.order_state.status != 'Cancelled' )
 					order.order_states.update_or_create( IB::OrderState.new( status: 'Cancelled', 
@@ -168,7 +168,7 @@ Otherwise only the last action is not applied and the order is unchanged.
 						 def self.alert_#{n} msg
 
 								 if msg.error_id.present?
-										IB::Gateway.current.for_active_accounts do | account |
+										IB::Gateway.current.account_data do | account |
 												order= account.locate_order( local_id: msg.error_id )
 												if order.present? && ( order.order_state.status != 'Rejected' )
 													order.order_states.update_or_create(  IB::OrderState.new( status: 'Rejected' ,

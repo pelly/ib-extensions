@@ -33,14 +33,14 @@ raises an IB::Error if less then 100 items are recieved-
 
 		@account_data_subscription ||=   subscribe_account_updates
 
-		accounts =  active_accounts if accounts.empty?
+		accounts =  clients if accounts.empty?
 		logger.warn{ "No active account present. AccountData are NOT requested" } if accounts.empty?
 		# Account-infos have to be requested sequencially. 
 		# subsequent (parallel) calls kill the former once on the tws-server-side
 		# In addition, there is no need to cancel the subscription of an request, as a new
 		# one overwrites the active one.
 		accounts.each do | ac |
-			account =  ac.is_a?( IB::Account ) ?  ac  : active_accounts.find{|x| x.account == ac } 
+			account =  ac.is_a?( IB::Account ) ?  ac  : clients.find{|x| x.account == ac } 
 			error( "No Account detected " )  unless account.is_a? IB::Account
 			# don't repeat the query until 170 sec. have passed since the previous update
 			if account.last_updated.nil?  || ( Time.now - account.last_updated ) > 170 # sec   
@@ -67,7 +67,7 @@ raises an IB::Error if less then 100 items are recieved-
 
 
   def all_contracts
-		active_accounts.map(&:contracts).flat_map(&:itself).uniq(&:con_id)
+		clients.map(&:contracts).flat_map(&:itself).uniq(&:con_id)
   end
 
 
@@ -80,7 +80,7 @@ raises an IB::Error if less then 100 items are recieved-
 	
 	def subscribe_account_updates continously: true
 		tws.subscribe( :AccountValue, :PortfolioValue,:AccountDownloadEnd )  do | msg |
-			for_selected_account( msg.account_name ) do | account |   # enter mutex controlled zone
+			account_data( msg.account_name ) do | account |   # enter mutex controlled zone
 				case msg
 				when IB::Messages::Incoming::AccountValue
 					account.account_values << msg.account_value
@@ -106,7 +106,7 @@ raises an IB::Error if less then 100 items are recieved-
 #								.update_or_create( msg.portfolio_value ) { :account } 
 						logger.debug { "#{ account.account } :: #{ msg.contract.to_human }" }
 					end # case
-			end # for_selected_account 
+			end # account_data 
 		end # subscribe
 	end  # def 
 
