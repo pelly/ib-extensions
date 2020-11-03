@@ -34,8 +34,10 @@ Returns the most recent market-price of a given contract  ( [documentation](http
 ```
 require 'ib-api'
 require 'ib/eod'
+
+puts IB::Symbols.Index.estx.eod( duration: '10 d' )
 ```
-Fetch historical data with just one line of code [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Historical-Data)
+Fetch historical data with just one line of code  ([documentation](https://ib-ruby.github.io/ib-doc/Historical_data.html) )
 
 ## Order Prototypes
 ```
@@ -48,7 +50,7 @@ order = IB::StopLimit.order size: 100, price: 10, stop_price: 9.5
 
 then transmit the order through  the `place_order` method of IB::Connection (or IB::Gateway)
 
-More details in the [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Order-Prototypes)
+More details in the [documentation](https://ib-ruby.github.io/ib-doc/order_prototypes.html) )
 
 
 ## Spread Prototypes
@@ -70,14 +72,14 @@ s = IB::Strangle.build from: IB::Symbols::Index.stoxx,
                             expiry: 202103 
 
 ```
-and use the speads like any other contract. [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Strangles,-Straddles-%26-Co)
+and use the speads like any other contract. ([documentation](https://ib-ruby.github.io/ib-doc/spreads.html)
 
 ## Gateway 
 ```
 require 'ib-gateway'
 ```
 IB::Gateway is an alternative to IB::Connection. Upon initialization, it detects active accounts and stores them in a thread safe array. 
-Details in the [wiki](https://github.com/ib-ruby/ib-ruby/wiki/Gateway).
+Details in the [documentation](https://ib-ruby.github.io/ib-doc/gateway.html)
 
 Its used in [Simple Monitor](https://github.com/ib-ruby/simple-monitor)
 
@@ -87,7 +89,7 @@ Its used in [Simple Monitor](https://github.com/ib-ruby/simple-monitor)
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/ib-extensions. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/ib-extensions/blob/master/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/ib-ruby/ib-extensions. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/ib-extensions/blob/master/CODE_OF_CONDUCT.md).
 
 
 ## Code of Conduct
