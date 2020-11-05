@@ -29,11 +29,9 @@ def butterfly symbol, expiry, right, *strikes
               :combo_legs => legs
 end
 
-def atm_option stock
-  # returns the ATM-Put-Option of the given stock
-  atm =  stock.atm_options
-	atm[atm.keys.at(1)].first
-
+def common_option stock, strike
+  # returns a real put-Option of the given stock
+   IB::Option.new( symbol: stock.symbol, currency: stock.currency, exchange: 'SMART', strike: strike, right: :put, expiry: IB::Symbols::Futures.next_expiry).verify.first
 end
 
 RSpec.shared_examples 'a valid Estx Combo' do
@@ -64,7 +62,7 @@ end
 
 RSpec.shared_examples 'a valid wfc-stock Combo' do
 
-		its( :exchange ) { should eq 'EDGX' }
+		its( :exchange ) { should eq 'SMART' }
 		its( :symbol )   { should eq "WFC" }
 		its( :market_price )   { should be_a Numeric }
 end

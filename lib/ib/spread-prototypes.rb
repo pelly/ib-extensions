@@ -23,11 +23,8 @@ module IB
 
 		def initialize_spread ref_contract = nil, **attributes
 			error "Initializing of Spread failed – contract is missing" unless ref_contract.is_a?(IB::Contract)
-			attributes =  ref_contract.attributes.merge attributes
-			the_spread = nil
-			IB::Contract.new(attributes).verify do| c|	
-				the_spread= IB::Spread.new  c.attributes.slice( :exchange, :symbol, :currency )
-			end
+			the_contract =  ref_contract.merge( attributes ).verify.first
+			the_spread= IB::Spread.new  the_contract.attributes.slice( :exchange, :symbol, :currency )
 			error "Initializing of Spread failed – Underling is no Contract" if the_spread.nil?
 			yield the_spread if block_given?  # yield outside mutex controlled verify-environment
 			the_spread  # return_value

@@ -15,12 +15,12 @@ module IB
 			def fabricate master
 
 				flip_right = ->(the_right){  the_right == :put ? :call : :put   }
-				error "Argument must be a IB::Option" unless master.is_a? IB::Option
+				error "Argument must be a IB::Option" unless [ :option, :futures_option ].include?( master.sec_type )
 
 
 				initialize_spread( master ) do | the_spread |
-					the_spread.add_leg master
-					the_spread.add_leg(IB::Contract.build master.attributes.merge( right: flip_right[master.right]) )
+					the_spread.add_leg master.essential
+					the_spread.add_leg( master.essential.merge( right: flip_right[master.right], local_symbol: "") )
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end
@@ -36,32 +36,21 @@ module IB
 #   Call with 
 #   IB::Spread::Straddle.build from: IB::Contract, strike: a_value, expiry: yyyymmm(dd) 
 			def build from:, ** fields
-				underlying = if from.is_a?  IB::Option
-											 fields[:strike] = from.strike unless fields.key?(:strike)
-											 fields[:expiry] = from.expiry unless fields.key?(:expiry)
-											 fields[:multiplier] = from.multiplier unless fields.key?(:multiplier) || from.multiplier.to_i.zero?
-											 details =  nil
-											 v = from.verify.first
-											 IB::Contract.new( con_id: v.details.under_con_id, 
-																				exchange: v.currency)
-																			 .verify
-																			 .first
-																			 .essential
-										 else
-											 from
-										 end
+				if  from.is_a?  IB::Option
+					fabricate from.merge(fields)
+				else
+					initialize_spread( from ) do | the_spread |
+						leg_prototype  = IB::Option.new from.attributes
+						.slice( :currency, :symbol, :exchange)
+						.merge(defaults)
+						.merge( fields )
 
-				initialize_spread( underlying ) do | the_spread |
-					leg_prototype  = IB::Option.new underlying.attributes
-															.slice( :currency, :symbol, :exchange)
-															.merge(defaults)
-															.merge( fields )
-
-					leg_prototype.sec_type = 'FOP' if underlying.is_a?(IB::Future)
-					the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :put )
-					the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :call )
-					error "Initialisation of Legs failed" if the_spread.legs.size != 2
-					the_spread.description =  the_description( the_spread )
+						leg_prototype.sec_type = 'FOP' if from.is_a?(IB::Future)
+						the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :put )
+						the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :call )
+						error "Initialisation of Legs failed" if the_spread.legs.size != 2
+						the_spread.description =  the_description( the_spread )
+					end
 				end
 			end
 

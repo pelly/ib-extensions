@@ -1,13 +1,13 @@
 require 'combo_helper'
 PUT=3000
 CALL=3200
+PUT_ES= 3400
+CALL_ES=3600
 RSpec.describe "IB::Strangle" do
-	let ( :the_option ){ IB::Option.new  symbol: :Estx50, strike: PUT, right: :put, expiry: IB::Symbols::Futures.next_expiry }
+	let ( :the_option ){ IB::Symbols::Options.stoxx.merge strike: PUT }
   before(:all) do
-    verify_account
-    IB::Connection.new OPTS[:connection].merge(:logger => mock_logger) do |gw|
-			gw.subscribe( :Alert ){|y|  puts y.to_human }
-		end
+     establish_connection 
+			IB::Connection.current.subscribe( :Alert ){|y|  puts y.to_human }
   end
 
   after(:all) do
@@ -35,6 +35,23 @@ RSpec.describe "IB::Strangle" do
 		it_behaves_like 'a valid Estx Combo'
 	end
 
+
+	context "build with Future" do
+		subject{ IB::Strangle.build from: IB::Symbols::Futures.es, p: PUT_ES, c: CALL_ES }
+
+		it{ is_expected.to be_a IB::Spread }
+		it_behaves_like 'a valid ES-FUT Combo'
+
+	end
 			
+	context "fabricated with FutureOption" do
+		subject do
+			fo = IB::Strangle.build( from: IB::Symbols::Futures.es, p: PUT_ES, c: CALL_ES).legs.first
+			IB::Strangle.fabricate fo, 200
+    end
+		it{ is_expected.to be_a IB::Spread }
+		it_behaves_like 'a valid ES-FUT Combo'
+
+	end
 
 end

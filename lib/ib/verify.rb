@@ -212,10 +212,10 @@ module IB
 			item_attributehash = ->(i){ i.keys.zip(item_values[i]).to_h }
 			## now lets proceed, but only if no con_id is present
 			if con_id.blank? || con_id.zero?
-				if item_values[nessesary_attributes].any?( &:nil? ) 
-					raise VerifyError, "#{items_as_string[nessesary_attributes]} are needed to retrieve Contract,
-																	got: #{item_values[nessesary_attributes].join(',')}"
-				end
+#				if item_values[nessesary_attributes].any?( &:nil? ) 
+#					raise VerifyError, "#{items_as_string[nessesary_attributes]} are needed to retrieve Contract,
+#																	got: #{item_values[nessesary_attributes].join(',')}"
+#				end
 	#			Contract.build  item_attributehash[nessesary_items].merge(:sec_type=> sec_type)  # return this
 				Contract.build  self.attributes # return this
 			else   # its always possible, to retrieve a Contract if con_id and exchange  or are present 

@@ -26,7 +26,7 @@ module IB
 					strike = master.strike
 					master.right = :put unless master.right == :call
 					l=[] ; master.verify{|x| x.contract_detail= nil; l << x }
-					puts "master:  #{master.attributes.inspect}"
+#					puts "master:  #{master.attributes.inspect}"
 					if l.empty?
 						error "Invalid Parameters. No Contract found #{master.to_human}" 
 					elsif l.size > 1

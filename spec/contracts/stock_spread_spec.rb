@@ -14,7 +14,7 @@ RSpec.describe "IB::StockSpread" do
   end
 
 
-	context "initialize without ratio" do
+	context "initialize without ratio", focus: true  do
 		subject { IB::StockSpread.fabricate IB::Stock.new( symbol:'T' ), IB::Stock.new(symbol: 'GE') }
 		it{ is_expected.to be_a IB::Spread }
 #		it_behaves_like 'a valid Estx Combo'

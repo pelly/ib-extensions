@@ -14,14 +14,14 @@ module IB
 #   IB::Vertical.fabricate  an_option, buy: {another_strike},  (or) , :sell{another_strike} 
 			def fabricate master, buy: 0, sell: 0
 
-				error "Argument must be a IB::Option" unless master.is_a? IB::Option
+				error "Argument must be an option" unless [:option, :futures_option].include? master.sec_type
 				error "Unable to fabricate Vertical. Either :buy or :sell must be specified " if buy.zero? && sell.zero?
 
 				buy =  master.strike if buy.zero? 
 				sell =  master.strike if sell.zero? 
 				initialize_spread( master ) do | the_spread |
-					the_spread.add_leg IB::Contract.build( master.attributes.merge(strike: sell)), action: :sell
-					the_spread.add_leg IB::Contract.build( master.attributes.merge(strike: buy)), action: :buy
+					the_spread.add_leg master.essential.merge(strike: sell, local_symbol: "", con_id: 0), action: :sell
+					the_spread.add_leg master.essential.merge(strike: buy, local_symbol: "", con_id: 0), action: :buy
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end
@@ -44,10 +44,11 @@ module IB
 											 fields[:expiry] = from.expiry unless fields.key?(:expiry)
 											 fields[:trading_class] = from.trading_class unless fields.key?(:trading_class) || from.trading_class.empty?
 											 fields[:multiplier] = from.multiplier unless fields.key?(:multiplier) || from.multiplier.to_i.zero?
-											 details =  nil; from.verify{|c| details = c.contract_detail }
+											 details =  from.verify.first.contract_detail 
 											 IB::Contract.new( con_id: details.under_con_id, 
-																				currency: from.currency)
-																			 .verify!
+																				currency: from.currency, 
+																			  exchange: from.exchange)
+																			 .verify.first
 																			 .essential
 										 else
 											 from
@@ -59,9 +60,10 @@ module IB
 															.slice( :currency, :symbol, :exchange)
 															.merge(defaults)
 															.merge( fields )
+															.merge( local_symbol: "" )
 					leg_prototype.sec_type = 'FOP' if underlying.is_a?(IB::Future)
-					the_spread.add_leg IB::Contract.build( leg_prototype.attributes.merge(strike: kind[:sell])), action: :sell
-					the_spread.add_leg IB::Contract.build( leg_prototype.attributes.merge(strike: kind[:buy] )), action: :buy
+					the_spread.add_leg  leg_prototype.merge(strike: kind[:sell]), action: :sell
+					the_spread.add_leg  leg_prototype.merge(strike: kind[:buy] ), action: :buy
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end

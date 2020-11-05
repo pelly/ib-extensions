@@ -82,17 +82,17 @@ Adds (or substracts) relative (back) measures to the front month, just passes ab
 
 		def add_leg contract, **leg_params
 			evaluated_contracts =  []
-			nr =	contract.verify do |c|
-					self.combo_legs << ComboLeg.new( c.attributes
+			nc =	contract.verify.first
+			leg_params[:action] ||= :buy
+			leg_params[:weight] = 1 unless leg_params.key?(:weight) || leg_params.key?(:ratio)
+			if nc.is_a?( IB::Contract) && nc.con_id.present?
+					self.combo_legs << ComboLeg.new( nc.attributes
 																					.slice( :con_id, :exchange )
-																					.merge( action: :buy )
 																					.merge( leg_params )
 																				 )
-					self.description = description + " added #{c.to_human}" rescue "Spread: #{c.to_human}"
-					self.legs << c.essential
-					evaluated_contracts << c.essential
+					self.description = description + " added #{nc.to_human}" rescue "Spread: #{nc.to_human}"
+					self.legs << nc.essential
 			end
-			error "ambiguous contract-specification\n #{evaluated_contracts.map{|c| [c.to_human, c.trading_class].join(" / ")}.join("\n ")}" if nr.size > 1 
 			self  # return value to enable chaining
 
 
