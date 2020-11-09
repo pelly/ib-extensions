@@ -111,10 +111,12 @@ Example
 			logger.progname =  'Account#PlaceOrder' 
 			result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
 			#·IB::Symbols are always qualified. They carry a description-field
-			qualified_contract = ->(c) { c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) }
-			contract &.verify{|c| order.contract = c}  # don't touch the parameter, get a new object
+			qualified_contract = ->(c) { c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) || 
+																c.con_id <0  && c.sec_type == :bag  }
+			order.contract = contract.verify.first if contract.present? && order.contract.nil? 
+
 			## sending of plain vanilla IB::Bags will fail using account.place, unless a (negative) con-id is provided!
-			error "place order: ContractVerification failed. No con_id assigned" if order &.contract &.con_id.to_i.zero?
+#			error "place order: ContractVerification failed. No con_id assigned"  unless qualified_contract[order.contract]
 			order.account =  account  # assign the account_id to the account-field of IB::Order
 			the_local_order_id =  nil
 			if qualified_contract[order.contract]
@@ -192,9 +194,8 @@ This has to be done manualy in the provided block
 		result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
 		order.what_if = true
 		the_local_id = place_order order: order, contract: contract
-		Timeout::timeout(1, IB::TransmissionError,"(Preview-)Order is not transmitted properly" ) do
-			loop{  sleep 0.1;  break if  result[the_local_id] }  
-		end
+		i=0; loop{ i= i+1;  break if result[the_local_id] || i > 1000; sleep 0.01 }
+		raise IB::TransmissionError,"(Preview-)Order is not transmitted properly" if i >=1000
 		order.what_if = false # reset what_if flag
 		order.local_id = nil  # reset local_id to enable reusage of the order-object for placing
 		result[the_local_id].order_state.forcast  #  return_value

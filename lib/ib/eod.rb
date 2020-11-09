@@ -78,6 +78,8 @@ require 'active_support/core_ext/date/calculations'
 		#   <Bar: 2019-04-11 wap 0.0 OHLC 3430.73 3442.25 3412.15 3435.34 trades 1773 vol 0>
 		#   <Bar: 2019-04-12 wap 0.0 OHLC 3432.16 3454.77 3425.84 3447.83 trades 1715 vol 0>
 		#
+		# «to_human« is not needed here because ist aliased with `to_s`
+		# 
 		# puts Symbols::Stocks.wfc.eod(  start: Date.new(2019,10,9), duration: 3 ) 
 		#		<Bar: 2020-10-23 wap 23.3675 OHLC 23.55 23.55 23.12 23.28 trades 5778 vol 50096>
 		#		<Bar: 2020-10-26 wap 22.7445 OHLC 22.98 22.99 22.6 22.7 trades 6873 vol 79560>

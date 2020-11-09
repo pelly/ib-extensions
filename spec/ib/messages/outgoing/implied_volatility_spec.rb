@@ -15,7 +15,7 @@ end
 ####  NOT FINISHED ####
 RSpec.describe IB::Messages::Incoming::TickOption do
 
-  context 'Simulated Response from TWS', focus: false do
+  context 'Simulated Response from TWS' do
 
     subject do
          IB::Messages::Outgoing::RequestImpliedVolatility.new
@@ -33,8 +33,9 @@ RSpec.describe IB::Messages::Incoming::TickOption do
     before(:all) do
 			establish_connection
       @ib = IB::Connection.current
-			@ib.send_message :RequestImpliedVolatility, request_id: 123, contract: IB::Symbols::Options.aapl200,
-								:under_price => 195, option_price: 19
+			## this only works if :under_price is set to a reasonable value, eg market_price +/- 10 %
+			@ib.send_message :RequestImpliedVolatility, request_id: 123, contract: IB::Symbols::Options.aapl.verify.first,
+								:under_price => 115, option_price: 8 
 
       @ib.wait_for :TickOption
     end
@@ -44,7 +45,9 @@ RSpec.describe IB::Messages::Incoming::TickOption do
     subject { @ib.received[:TickOption].first }
 		 
     it_behaves_like 'TickOption message'
-		its( :option_price ){ is_expected.to eq 19 }
-		its( :under_price ){ is_expected.to eq 195 }
+		its( :option_price ){ is_expected.to eq 8 }
+		its( :under_price ){ is_expected.to eq 115 }
+
+		its( :implied_volatility ){ is_expected.to  be_between(0.8, 0.9) }
   end #
 end # describe IB::Messages:Incoming

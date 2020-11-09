@@ -382,10 +382,10 @@ Its always active.
 
 # Handy method to ensure that a connection is established and active.
 #
-# The connection is resetted on the IB-side at least once a day. Then the 
+# The connection is reset on the IB-side at least once a day. Then the 
 # IB-Ruby-Connection has to be reestablished, too. 
 # 
-# check_connection reconnects if nesessary and returns false if the connection is lost. 
+# check_connection reconnects if necessary and returns false if the connection is lost. 
 # 
 # It delays the process by 6 ms (150 MBit Cable connection)
 #
