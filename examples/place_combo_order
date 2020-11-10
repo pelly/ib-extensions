@@ -52,9 +52,9 @@ the_bag = spread( IB::Symbols::Stocks.msft, IB::Symbols::Stocks.wfc ){ [1, -1]  
 puts the_bag.inspect
 # use the order-prototype to create the order
 order = IB::Combo.order total_quantity: 10, 
-                      limit_price: 32,
-                      action: :buy,
-											account: account_code 
+                        limit_price: 32,
+                        action: :buy,
+			account: account_code 
 		
 # and place both
 ib.place_order order,the_bag 
