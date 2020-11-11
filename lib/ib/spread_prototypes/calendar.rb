@@ -15,14 +15,14 @@ module IB
 #   IB::Calendar.fabricate  an_option, the_other_expiry
 			def fabricate master, the_other_expiry
 
-				error "Argument must be a IB::Future or IB::Option" unless  [IB::Option,IB::Future].include? master.class
+				error "Argument must be a IB::Future or IB::Option" unless  [:option, :future_option, :future ].include? master.sec_type
 
 				initialize_spread( master ) do | the_spread |
 					the_spread.add_leg master, action: :buy
 					
 					the_other_expiry =  the_other_expiry.values.first if the_other_expiry.is_a?(Hash)
 					back = the_spread.transform_distance master.expiry, the_other_expiry
-					the_spread.add_leg IB::Contract.build( master.attributes.merge(expiry: back )), action: :sell
+					the_spread.add_leg master.merge(expiry: back ), action: :sell
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end

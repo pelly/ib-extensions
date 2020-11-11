@@ -16,11 +16,11 @@ module IB
 				#   or
 				#   IB::StockSpread.fabricate  IB::Stock.new(symbol:'GE'), 'F', ratio:[1,-2]
 				#
-				def  fabricate *underlying,  ratio: [1,-1]
+				def  fabricate *underlying,  ratio: [1,-1], **args
 					#
-					are_stocks =  ->{ underlying.all?{|y| y.is_a? IB::Stock} }
-					legs = underlying.map{|y| y.is_a?( IB::Stock ) ? y : IB::Stock.new( symbol: y )}
-					error "only spreads with two underyings of type »IB::Stock« are supported" unless underlying.size==2 && are_stocks[]
+					are_stocks =  ->(l){ l.all?{|y| y.is_a? IB::Stock} }
+					legs = underlying.map{|y| y.is_a?( IB::Stock ) ? y.merge(args) : IB::Stock.new( symbol: y ).merge(args)}
+					error "only spreads with two underyings of type »IB::Stock« are supported" unless legs.size==2 && are_stocks[legs]
 					initialize_spread( legs.first ) do | the_spread |
 						c_l = legs.zip(ratio).map do |l,r| 
 						action = r >0 ?  :buy : :sell

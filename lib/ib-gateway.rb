@@ -1,7 +1,4 @@
 require  'ib-api'
 require  'ib/symbols'
-require  'ib/account-infos'
-require  'ib/order-handling'
-require  'alerts/ib/base-alert'
+require  'ib/verify'
 require  'ib/gateway'
-require  'models/ib/account'

@@ -4,27 +4,29 @@ require 'combo_helper'
 RSpec.describe "What IF  Order"   do
 
 
-  before(:all) { establish_connection }
+  before(:all) { init_gateway }
 		
 	after(:all) {  remove_open_orders; close_connection }
 
 	context "Butterfly" do
-    before(:all) do
-      ib = IB::Connection.current
-			@initial_order_id =  ib.next_local_id
+		before(:all) do
+			gw =  IB::Gateway.current
+			@initial_order_id =  gw.tws.next_local_id
 
-				ib.clear_received   # just in case ...
+			gw.tws.clear_received   # just in case ...
 
-				the_contract = butterfly 'GOOG', '202103', 'CALL', 1530, 1550, 1570 
-				@local_id_placed = place_the_order( contract: the_contract ) do | last_price |
-					  IB::Limit.order( action: :buy,
-					                  order_ref:  'What_if',
-										        limit_price: last_price,
-														total_quantity: 10,
-														what_if: true,
-														account: ACCOUNT )
+			the_contract = IB::Butterfly.build from: IB::Stock.new( symbol: :goog ), expiry: 202103,
+				                                 right: :call, strike: 1550, front: 1530, back: 1570 
 
-				end
+			market_price =  23 #  the_contract.market_price 
+			the_client =  gw.clients.detect{|x| x.account == ACCOUNT }
+
+			@local_id_placed = the_client.preview contract: the_contract,
+                                            order: IB::Limit.order( action: :buy,
+								#				order_ref:  'What_if',
+												limit_price: market_price ,
+												size: 10 )
+
 		end
 
 		context IB::Connection  do
@@ -52,7 +54,7 @@ RSpec.describe "What IF  Order"   do
 
 		## separated from  context IB::Order
 		#. ib.clear_received is evaluated before shared_examples are run, thus 
-		#	 makes it impossibe to load the order from the received-hash..
+		#	 makes it impossible to load the order from the received-hash..
 		context "finalize" do
 			it 'is not actually being placed though' do
 				ib = IB::Connection.current

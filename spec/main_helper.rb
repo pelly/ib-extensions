@@ -54,7 +54,26 @@ def establish_connection
 	end
 end
 
-
+def init_gateway
+	puts "initializing...2"
+  args= OPTS[:connection].slice(:port, :host, :client_id).merge(  serial_array: true) do |a|
+#		a.logger = mock_logger
+	end
+	puts "args;: #{args}"
+ gw = IB::Gateway.new( serial_array: true, client_id: 2111) #args
+	puts "connected"
+  if gw
+		puts "verifying"
+		if va = gw.clients.detect{|c| c.account == ACCOUNT }
+			OPTS[:account_verified] = true
+		else
+			raise "Connected to wrong account #{gw.clients.map( &:to_human).join " "}, expected #{account}" 
+		end
+	else
+		raise "could not establish connection!"
+	end
+	puts gw.tws.received.inspect
+end
 
 
 # Clear logs and message collector. Output may be silenced.

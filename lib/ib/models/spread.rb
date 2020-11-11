@@ -1,3 +1,4 @@
+require 'ib/verify'
 module IB
 	class Spread  < Bag
 		has_many :legs
@@ -80,18 +81,17 @@ Adds (or substracts) relative (back) measures to the front month, just passes ab
 		#		
 		#	Default:  action: :buy, 	weight: 1
 
-		def add_leg contract, **leg_params
+		def add_leg contract,  **leg_params
 			evaluated_contracts =  []
-			nc =	contract.verify.first
-			leg_params[:action] ||= :buy
-			leg_params[:weight] = 1 unless leg_params.key?(:weight) || leg_params.key?(:ratio)
+			nc =	contract.verify.first.essential
+			#			weigth = 1 --> sets Combo.side to buy and overwrites the action statement
+#			leg_params[:weight] = 1 unless leg_params.key?(:weight) || leg_params.key?(:ratio)
 			if nc.is_a?( IB::Contract) && nc.con_id.present?
-					self.combo_legs << ComboLeg.new( nc.attributes
-																					.slice( :con_id, :exchange )
-																					.merge( leg_params )
-																				 )
+					the_leg= ComboLeg.new( nc.attributes.slice( :con_id, :exchange )
+																					.merge( leg_params ))
+					self.combo_legs << the_leg 
 					self.description = description + " added #{nc.to_human}" rescue "Spread: #{nc.to_human}"
-					self.legs << nc.essential
+					self.legs << nc
 			end
 			self  # return value to enable chaining
 
@@ -111,7 +111,7 @@ Adds (or substracts) relative (back) measures to the front month, just passes ab
 
 
 		def essential
-				legs.each{ |x| x.contract_detail =  nil }
+				legs.each{ |x| x.essential }
 				self
 		end
 		def  multiplier

@@ -1,3 +1,7 @@
+#
+require 'ib/gateway/account-infos'
+require 'ib/gateway/order-handling'
+require 'active_support/core_ext/module/attribute_accessors'
 #module GWSupport
 # provide  AR4- ActiveRelation-like-methods to Array-Class
 #refine  Array do
@@ -71,8 +75,6 @@ IB::Gateway.new  serial_array: true (, ...)
 
 class Gateway
 
- require 'active_support'
-
  include LogDev   # provides default_logger
  include AccountInfos  # provides Handling of Account-Data provided by the tws
  include OrderHandling 
@@ -141,6 +143,7 @@ If called without a parameter, all clients are accessed
 		  serial_array: false, 
 		  logger: default_logger,
 			watchlists: [] ,  # array of watchlists (IB::Symbols::{watchlist}) containing descriptions for complex positions
+			**other_agruments_which_are_ignored,
 			&b
 
     host, port = (host+':'+port.to_s).split(':') 
@@ -167,7 +170,8 @@ If called without a parameter, all clients are accessed
     # initialise Connection without connecting
     prepare_connection &b
     # finally connect to the tws
-    if connect || get_account_data
+		connect =  true if get_account_data
+    if connect 
       if connect(100)  # tries to connect for about 2h
 				get_account_data(watchlists: watchlists.map{|b| IB::Symbols.allocate_collection b})  if get_account_data
 				#    request_open_orders() if request_open_orders || get_account_data 
@@ -260,7 +264,7 @@ Argument is either an order-object or a local_id
 		# ##  Attention
 		# ##  @accounts are not initialized yet (empty array)
     if block_given? 
-      yield self 
+      yield  self
     
     end
   end
@@ -268,7 +272,7 @@ Argument is either an order-object or a local_id
   ## ------------------------------------- connect ---------------------------------------------##
 =begin
 Zentrale Methode 
-Es wird ein Connection-Objekt (IB::Connection.current) angelegt, dass mit den Daten aus config/connect.yml initialisiert wird.
+Es wird ein Connection-Objekt (IB::Connection.current) angelegt.
 Sollte keine TWS vorhanden sein, wird eine entsprechende Meldung ausgegeben und der Verbindungsversuch 
 wiederholt.
 Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
@@ -281,8 +285,7 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 		i= -1
 		logger.progname =  'Gateway#connect' 
 		begin
-			tws_ready =  false
-			tws.connect# { tws_ready =  true } 
+			tws.connect
 		rescue  Errno::ECONNREFUSED => e
 			i+=1
 			if i < maximal_count_of_retry
@@ -295,7 +298,6 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 				retry
 			else
 				logger.info { "Giving up!!" }
-				#Kernel.exit(false)
 				return false
 			end
 		rescue Errno::EHOSTUNREACH => e
@@ -309,11 +311,12 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 
 		tws.start_reader
 		# let NextValidId-Event appear
-		loop do
-#			puts "Connected: #{tws.connected?}"
-#			puts "NextLocalId: #{tws.next_local_id}"
+		(1..30).each do |r|
 			break if tws.next_local_id.present?
 			sleep 0.1
+			if r == 30
+				error "Connected, NextLocalId is not initialized. Repeat with another client_id"
+			end
 		end
 		# initialize @accounts (incl. aliases)
 		tws.send_message :RequestFA, fa_data_type: 3

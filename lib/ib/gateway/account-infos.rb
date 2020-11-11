@@ -1,4 +1,5 @@
-require 'alerts/ib/base-alert'
+require 'ib/alerts/base-alert'
+require 'ib/models/account'
 
 module IB
 	class Alert
