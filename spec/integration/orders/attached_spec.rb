@@ -5,7 +5,8 @@ require 'combo_helper'
 def define_contracts
   @contracts = {
     :stock => IB::Symbols::Stocks.wfc,
-    :butterfly => butterfly('GOOG', '202103', 'CALL', 1500, 1520, 1540) # defined in Combo_helper
+		:butterfly	=> IB::Butterfly.build( from: IB::Stock.new( symbol: :goog ), expiry: 202103,
+				                                 right: :call, strike: 1550, front: 1530, back: 1570 )
   }
 end
 ## in premarket condition GTC BUY (butterfly) limit order with attached LMT SELL  fails!
@@ -13,7 +14,7 @@ end
 describe 'Attached Orders', :connected => true, :integration => true , :us_trading_hours => true do
 
   before(:all) do
-   establish_connection
+		init_gateway
 		ib = IB::Connection.current
 			ib.subscribe( :OpenOrder ){|msg| @the_open_order_message = msg}
     define_contracts
@@ -22,28 +23,24 @@ describe 'Attached Orders', :connected => true, :integration => true , :us_tradi
 	after(:all) { remove_open_orders; close_connection }
   # Testing different combinations of Parent + Attached Orders:
   [
-    [:stock, 100, 'DAY', 'LMT'], # Parent + takeprofit target
-    [:stock, 100, 'DAY', 'STP'], # Parent + stoploss
-    [:stock, 100, 'GTC', 'STPLMT'], # GTC Parent + target
-    [:butterfly, 1, 'DAY', 'LMT'], # Combo Parent + target
-    [:butterfly, 1, 'GTC', 'LMT'], # GTC Combo Parent + target
-    [:butterfly, 1, 'GTC', 'STPLMT'], # GTC Combo Parent + stoplimit target
-  ].each do |(contract, qty, tif, attach_type)|
-    context "#{tif} BUY (#{contract}) limit order with attached #{attach_type} SELL" do
+    [:stock, 100, 'DAY', 'LMT', 40], # Parent + takeprofit target
+    [:stock, 100, 'DAY', 'STP', 40], # Parent + stoploss
+    [:stock, 100, 'GTC', 'STPLMT', 40], # GTC Parent + target
+    [:butterfly, 1, 'DAY', 'LMT', 3], # Combo Parent + target
+    [:butterfly, 1, 'GTC', 'LMT',3 ] , # GTC Combo Parent + target
+    [:butterfly, 1, 'GTC', 'STPLMT', 3]  # GTC Combo Parent + stoplimit target
+  ].each do |(contract, qty, tif, attach_type, price)|
+		context "#{tif} BUY (#{contract}) limit order with attached #{attach_type} SELL" do
 
-      before(:all) do
-        ib = IB::Connection.current
-        ib.wait_for :NextValidId
-        ib.clear_received # to avoid conflict with pre-existing Orders
-
-        #p [contract, qty, tif, attach_type ]
-				@the_contract = @contracts[contract] 
-				@local_id_placed = 	place_the_order contract: @the_contract do  | the_market_price |
-					IB::Limit.order size: qty, price: ( the_market_price - (the_market_price * 0.05) ).round(1), 
-													action: :buy,
-													tif: tif, transmit: false, account: ACCOUNT
-				end
-      end
+		before(:all) do
+			gw = IB::Gateway.current
+			gw.tws.clear_received # to avoid conflict with pre-existing Orders
+			client =  gw.clients.detect{|x| x.account == ACCOUNT}
+			#p [contract, qty, tif, attach_type ]
+			@the_contract = @contracts[contract] 
+			@local_id_placed = 	client.place  contract: @the_contract, 
+				order: IB::Limit.order( size: qty, price: price, action: :buy, tif: tif, transmit: false ) 
+		end
 
 			context IB::Connection do
 

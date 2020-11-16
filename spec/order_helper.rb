@@ -67,7 +67,6 @@ shared_examples_for 'OpenOrder message' do
   it 'has proper order accessor' do
     o = subject.order
     expect( o ).to be_an IB::Order
-    expect( o.client_id ).to eq(1111).or eq(2111)
     expect( o.parent_id ).to be_zero
     expect( o.local_id ).to be_an Integer
     expect( o.perm_id ).to  be_an Integer
@@ -83,7 +82,6 @@ shared_examples_for 'OpenOrder message' do
     expect(os.local_id).to be_an Integer
     expect(os.perm_id).to  be_an Integer 
     expect(os.perm_id.to_s).to  match  /^\d{9,11}$/   # has 9 to 11 numeric characters
-    expect(os.client_id).to eq(1111).or eq(2111)
     expect(os.parent_id).to be_zero
     expect(os.submitted?).to be_truthy
   end

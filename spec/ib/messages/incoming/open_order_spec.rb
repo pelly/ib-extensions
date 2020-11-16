@@ -2,46 +2,6 @@ require 'order_helper'
 require 'ib/symbols'
 require 'ib/order-prototypes'
 
-shared_examples_for 'OpenOrder message' do
-  it { should be_an IB::Messages::Incoming::OpenOrder }
-  its(:message_type) { is_expected.to eq :OpenOrder }
-  its(:message_id) { is_expected.to eq 5 }
-  its(:version) { is_expected.to eq 34}
-  its(:data) { is_expected.not_to  be_empty }
-  its(:buffer ) { is_expected.to be_empty }  # Work on openOrder-Message has to be finished.
-  							## Integration of Conditions !
-  its(:local_id) { is_expected.to be_an Integer }
-  its(:status) { is_expected.to match /Submit/ }
-  its(:to_human) { is_expected.to match /<OpenOrder/ }
-
-
-  it 'has proper order accessor' do
-    o = subject.order
-    expect( o ).to be_an IB::Order
-    expect( o.client_id ).to eq(1111).or eq(2111)
-    expect( o.parent_id ).to be_zero
-    expect( o.local_id ).to be_an Integer
-    expect( o.perm_id ).to  be_an Integer
-    expect(IB::VALUES[:clearing_intent].values). to include o.clearing_intent
-    expect( o.order_type ).to eq :limit
-    expect( IB::VALUES[:tif].values ).to include o.tif
-    #expect( o.status ).to match /Submit/
-    expect( o.clearing_intent ).to eq :ib
-  end
-
-  it 'has proper order_state accessor' do
-    os = subject.order_state
-    expect(os.local_id).to be_an Integer
-    expect(os.perm_id).to  be_an Integer 
-    expect(os.perm_id.to_s).to  match  /^\d{9,11}$/   # has 9 to 11 numeric characters
-    expect(os.client_id).to eq(1111).or eq(2111)
-    expect(os.parent_id).to be_zero
-    expect(os.submitted?).to be_truthy
-  end
-
-
-end
-
 describe IB::Messages::Incoming::OpenOrder do
 
   context 'Instantiated with buffer data'  do

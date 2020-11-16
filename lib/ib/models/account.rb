@@ -76,7 +76,7 @@ Example
 
    j36 =  IB::Stock.new symbol: 'J36', exchange: 'SGX'
    order =  IB::Limit.order size: 100, price: 65.5
-   g =  IB::Gateway.current.active_accounts.last
+   g =  IB::Gateway.current.clients.last
 
 	 g.preview contract: j36, order: order
       => {:init_margin=>0.10864874e6, 
@@ -86,7 +86,7 @@ Example
 					:commission_currency=>"USD", 
 					:warning=>""}
 
-   the_local_id = g.place order: order,  contract: j36
+   the_local_id = g.place order: order
 		  => 67						# returns local_id
 	 order.contract			# updated contract-record 
       => #<IB::Contract:0x00000000013c94b0 @attributes={:con_id=>95346693, 
@@ -117,8 +117,23 @@ Example
 
 			## sending of plain vanilla IB::Bags will fail using account.place, unless a (negative) con-id is provided!
 #			error "place order: ContractVerification failed. No con_id assigned"  unless qualified_contract[order.contract]
+			ib = IB::Connection.current
+			wrong_order = nil
+			the_local_id =  nil
+
+			### Handle Error messages
+			### Default action:  display error in log and return nil
+			sa = ib.subscribe( :Alert ) do | msg |
+				if msg.error_id == the_local_id
+				 if [ 110, #  The price does not conform to the minimum price variation for this contract
+					   388,  # Order size x is smaller than the minimum required size of yy.
+					  ].include? msg.code
+					 wrong_order =  msg.error_id.to_i  
+					 ib.logger.error msg.message
+				 end
+				end
+			end
 			order.account =  account  # assign the account_id to the account-field of IB::Order
-			the_local_order_id =  nil
 			if qualified_contract[order.contract]
 				self.orders.update_or_create order, :order_ref
 				order.auto_adjust # if auto_adjust  /defined in lib/order_handling
@@ -136,9 +151,13 @@ Example
 				loop{ sleep(0.001); break if locate_order( local_id: the_local_id, status: nil ).present? }
 			end
 
-			the_local_id  # return_value
+			ib.unsubscribe sa
 
-
+			if wrong_order.nil?
+				the_local_id  # return_value
+			else
+				nil
+			end
 		end # place 
 
 		# shortcut to enable

@@ -1,3 +1,4 @@
+
 module OrderHandling
 =begin
 UpdateOrderDependingObject
@@ -117,103 +118,33 @@ end # module
 
 
 module IB
-	class Alert
-
-		def self.alert_202 msg
-			# do anything in a secure mutex-synchronized-environment
-			any_order = IB::Gateway.current.account_data do | account |
-				order= account.locate_order( local_id: msg.error_id )
-				if order.present? && ( order.order_state.status != 'Cancelled' )
-					order.order_states.update_or_create( IB::OrderState.new( status: 'Cancelled', 
-																																	perm_id: order.perm_id, 
-																																	local_id: order.local_id  ) ,
-																																	:status )
-
-				end
-				order # return_value
-			end
-			if any_order.compact.empty? 
-				IB::Gateway.logger.error{"Alert 202: The deleted order was not registered: local_id #{msg.error_id}"}
-			end
-
-		end
-
-
-		def self.alert_2102
-			# Connectivity between IB and Trader Workstation has been restored - data maintained.
-			sleep 0.1  #  no need to wait too long.
-			if IB::Gateway.current.check_connection
-				IB::Gateway.logger.debug { "Alert 2102: Connection stable" }
-			else
-				IB::Gateway.current.reconnect
-			end
-		end
-		class << self
-=begin
-IB::Alert#AddOrderstateAlert
-
-The OrderState-Record is used to record the history of the order.
-If selected Alert-Messages appear, they are  added to the Order.order_state-Array.
-The last Status is available as Order.order_state, all states are accessible by Order.order_states
-
-The TWS-Message-text is stored to the »warning-text«-field.
-The Status is always »rejected«. 
-If the first OrderState-object of a Order is »rejected«, the order is not placed at all.
-Otherwise only the last action is not applied and the order is unchanged.
-
-=end
-			def add_orderstate_alert  *codes
-				codes.each do |n|
-					class_eval <<-EOD
-						 def self.alert_#{n} msg
-
-								 if msg.error_id.present?
-										IB::Gateway.current.account_data do | account |
-												order= account.locate_order( local_id: msg.error_id )
-												if order.present? && ( order.order_state.status != 'Rejected' )
-													order.order_states.update_or_create(  IB::OrderState.new( status: 'Rejected' ,
-															perm_id: order.perm_id, 
-															warning_text: '#{n}: '+  msg.message,
-															local_id: msg.error_id ), :status ) 	
-
-													IB::Gateway.logger.error{  msg.to_human  }
-												end	# order present?
-										 end	# mutex-environment
-									end	# branch
-							end	# def
-					EOD
-				end # loop
-			end # def
-		end
-		add_orderstate_alert  103,  # duplicate order
-			201,  # deleted object
-			105,  # Order being modified does not match original order
-			462,  # Cannot change to the new Time in Force:GTD
-			329,  # Cannot change to the new order type:STP
-			10147 # OrderId 0 that needs to be cancelled is not found.
-	end  # class Alert
-
 
 	class Order
 		def auto_adjust
-			# lambda to perform the calculation	
-			adjust_price = ->(a,b) do
-				a=BigDecimal(a,5) 
-				b=BigDecimal(b,5) 
-				_,o =a.divmod(b)
-			  a-o 
-			end
-			error "No Contract provided to Auto adjust " unless contract.is_a? IB::Contract
-			unless contract.is_a? IB::Bag
+			# lambda to perform the calculation
+		adjust_price = ->(a,b) do
+			a=BigDecimal(a,5) 
+			b=BigDecimal(b,5) 
+			_,o =a.divmod(b)
+			a-o 
+		end
+		# adjust_price[2.6896, 0.1].to_f     => 2.6 
+		# adjust_price[2.0896, 0.05].to_f    => 2.05 
+		# adjust_price[2.0896, 0.002].to_f   => 2.088 
+
+
+		error "No Contract provided to Auto adjust " unless contract.is_a? IB::Contract
+		unless contract.is_a? IB::Bag
 			# ensure that contract_details are present
-				contract.verify do |the_contract | 
-					the_details =  the_contract.contract_detail
-					# there are two attributes to consider: limit_price and aux_price
-					# limit_price +  aux_price may be nil or an empty string. Then ".to_f.zero?" becomes true 
-					self.limit_price= adjust_price.call(limit_price.to_f, the_details.min_tick) unless limit_price.to_f.zero?
-					self.aux_price= adjust_price.call(aux_price.to_f, the_details.min_tick) unless aux_price.to_f.zero?
-				end
+			
+			contract.verify do |the_contract | 
+				the_details =  the_contract.contract_detail.presence || the_contract.verify.first.contract_detail
+				# there are two attributes to consider: limit_price and aux_price
+				# limit_price +  aux_price may be nil or an empty string. Then ".to_f.zero?" becomes true 
+				self.limit_price= adjust_price.call(limit_price.to_f, the_details.min_tick) unless limit_price.to_f.zero?
+				self.aux_price= adjust_price.call(aux_price.to_f, the_details.min_tick) unless aux_price.to_f.zero?
 			end
 		end
-	end  # class Order
+	end
+end  # class Order
 end  # module

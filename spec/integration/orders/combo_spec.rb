@@ -11,6 +11,7 @@ RSpec.describe "What IF  Order"   do
 	context "Butterfly" do
 		before(:all) do
 			gw =  IB::Gateway.current
+			if gw
 			@initial_order_id =  gw.tws.next_local_id
 
 			gw.tws.clear_received   # just in case ...
@@ -23,10 +24,9 @@ RSpec.describe "What IF  Order"   do
 
 			@local_id_placed = the_client.preview contract: the_contract,
                                             order: IB::Limit.order( action: :buy,
-								#				order_ref:  'What_if',
 												limit_price: market_price ,
 												size: 10 )
-
+     end
 		end
 
 		context IB::Connection  do

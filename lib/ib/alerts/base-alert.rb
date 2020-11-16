@@ -33,10 +33,7 @@ To define a response to the code 134 ( Modify order failed)  a method like
 		end
 has to be written. 
 
-Important: The class is accessed asynchronically.
-If an ActiveRecord-Database-Operation is performed, the database-connection has to
-be closed manually with
-  ActiveRecord::Base.connection.close
+Important: The class is accessed asynchronically. Be careful while raising interrupts.
 
 =end
   
@@ -118,8 +115,9 @@ be closed manually with
 
 
       log_alert_in_error 320, 321, 323, 324, #ServerError
-			  103, #duplicate order
-			  201, #deleted object
+##				110, # The price does not conform to the minimum price variation
+#			  103, #duplicate order  ## order-alerts
+#			  201, #deleted objecta  ## order-alerts
 			  326 #Unable connect as the client id is already in use
 
       log_alert_in_warn  354 #Requested market data is not subscribed

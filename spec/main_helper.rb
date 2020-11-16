@@ -55,15 +55,9 @@ def establish_connection
 end
 
 def init_gateway
-	puts "initializing...2"
-  args= OPTS[:connection].slice(:port, :host, :client_id).merge(  serial_array: true) do |a|
-#		a.logger = mock_logger
-	end
-	puts "args;: #{args}"
- gw = IB::Gateway.new( serial_array: true, client_id: 2111) #args
-	puts "connected"
+  args= OPTS[:connection].slice(:port, :host, :client_id).merge(  serial_array: true,  logger: mock_logger)
+	gw = IB::Gateway.new  args
   if gw
-		puts "verifying"
 		if va = gw.clients.detect{|c| c.account == ACCOUNT }
 			OPTS[:account_verified] = true
 		else
@@ -72,7 +66,10 @@ def init_gateway
 	else
 		raise "could not establish connection!"
 	end
-	puts gw.tws.received.inspect
+rescue  IB::Error => e
+	puts e.inspect
+	nil
+
 end
 
 
