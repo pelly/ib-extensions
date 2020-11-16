@@ -6,11 +6,11 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Hartmut Bischoff"]
   spec.email         = ["topofocus@gmail.com"]
 
-  spec.summary       = %q{Code snipplets to access the tws-api comfortably}
-  spec.homepage      = "https://github.com/ib-ruby/"
-  spec.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
+  spec.summary       = %q{Part of IB-Ruby. Tools to to access the tws-api comfortably.}
+  spec.homepage      = "https://ib-ruby.github.io/ib-doc/"
+  spec.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
 
-  spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com"
+#  spec.metadata["allowed_push_host"] = "TODO: Set to 'http://mygemserver.com"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.cm/ib-ruby/ib-extensions"
