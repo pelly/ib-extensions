@@ -1,4 +1,5 @@
 require  'ib-api'
-require  'ib/symbols'
 require  'ib/verify'
+require  'ib/spread-prototypes'
+require  'ib/order-prototypes'
 require  'ib/gateway'

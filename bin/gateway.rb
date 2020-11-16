@@ -15,8 +15,7 @@ require 'ib-gateway'
 require 'ib/market-price'
 require 'ib/option-chain'
 require 'ib/eod'
-require 'ib/spread-prototypes'
-require 'ib/order-prototypes'
+require 'ib/symbols'
 class Array
   # enables calling members of an array. which are hashes  by it name
   # i.e
