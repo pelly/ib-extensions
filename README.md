@@ -11,6 +11,7 @@ gem 'ib-extensions'
 in the Gemfile and require the extensions as needed
 
 ## Include all
+(except gateway)
 ```
 require 'ib-api'
 require 'ib/extensions'
