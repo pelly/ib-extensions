@@ -1,4 +1,4 @@
-require 'ib/models/spread'
+#require 'ib/models/spread'
 require 'ib/verify'
 # These modules are used to facilitate referencing of most common Spreads 
 

@@ -27,5 +27,6 @@
 	* included specific alert-definitions in this directory:
 	  order-alerts, gateway-alerts
 
+* moving model/spread.rb to `ib-api`  Gem
 
-
+#### Preparation of a Gem-Release 
