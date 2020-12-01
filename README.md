@@ -2,17 +2,16 @@
 
 Helpers and Macros that ease the usage of the TWS-API of Interactive Brokers
 
-**status:** A stable Gem-Release is in preparation.
-
 __Documentation: [https://ib-ruby.github.io/ib-doc/](https://ib-ruby.github.io/ib-doc/)__  
 
 to activate use
 ```
-gem 'ib-extensions',  git: 'https://github.com/ib-ruby/ib-extensions.git'
+gem 'ib-extensions'
 ```
 in the Gemfile and require the extensions as needed
 
 ## Include all
+(except gateway)
 ```
 require 'ib-api'
 require 'ib/extensions'
@@ -91,9 +90,9 @@ Its used in [Simple Monitor](https://github.com/ib-ruby/simple-monitor)
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/ib-ruby/ib-extensions. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/ib-extensions/blob/master/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/ib-ruby/ib-extensions. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[ib-ruby/ib-extensions/blob/master/CODE_OF_CONDUCT.md).
 
 
 ## Code of Conduct
 
-Everyone interacting in the Ib::Extensions project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/ib-extensions/blob/master/CODE_OF_CONDUCT.md).
+Everyone interacting in the Ib::Extensions project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/ib-ruby/ib-extensions/blob/master/CODE_OF_CONDUCT.md).
