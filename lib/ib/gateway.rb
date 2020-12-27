@@ -317,12 +317,6 @@ If called without a parameter, all clients are accessed
 		end
 
 
-		private
-
-		def random_id
-			rand 99999
-		end
-
 
 
 		def prepare_connection &b
@@ -419,6 +413,12 @@ Its always active.
 			tws.unsubscribe z
 			count < 5  && answer #  return value
 		end
+	private
+
+	def random_id
+		rand 99999
+	end
+
 	end  # class
 
 end # module
