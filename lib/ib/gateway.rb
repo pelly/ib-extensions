@@ -321,7 +321,7 @@ If called without a parameter, all clients are accessed
 
 		def prepare_connection &b
 			tws.disconnect if tws.is_a? IB::Connection
-			self.tws = IB::Connection.new  @connection_parameter 
+			self.tws = IB::Connection.new  **@connection_parameter 
 			@accounts = @local_orders = Array.new
 
 			# prepare Advisor-User hierachy
