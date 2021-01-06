@@ -1,11 +1,11 @@
 module IB
 
-	class Account 
+	class Account
 
 
 		def account_data_scan search_key, search_currency=nil
 			if account_values.is_a? Array
-				if search_currency.present? 
+				if search_currency.present?
 					account_values.find_all{|x| x.key.match( search_key )  && x.currency == search_currency.upcase }
 				else
 					account_values.find_all{|x| x.key.match( search_key ) }
@@ -24,8 +24,8 @@ module IB
 
 =begin rdoc
 given any key of local_id, perm_id or order_ref
-and an optional status, which can be a string or a 
-regexp ( status: /mitted/ matches Submitted and Presubmitted) 
+and an optional status, which can be a string or a
+regexp ( status: /mitted/ matches Submitted and Presubmitted)
 the last associated Orderrecord is returned.
 
 Thus if several Orders are placed with the same order_ref, the active one is returned
@@ -37,9 +37,9 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 			search_option= [ local_id.present? ? [:local_id , local_id] : nil ,
 										perm_id.present? ? [:perm_id, perm_id] : nil,
 										order_ref.present? ? [:order_ref , order_ref ] : nil ].compact.first
-			matched_items = if search_option.nil? 
-												orders 
-											else 
+			matched_items = if search_option.nil?
+												orders
+											else
 												orders.find_all{|x| x[search_option.first].to_i == search_option.last.to_i }
 											end
 			matched_items = matched_items.find_all{|x| x.contract.con_id == con_id } if con_id.present?
@@ -53,8 +53,8 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 		end
 
 
-=begin rdoc 
-requires an IB::Order as parameter. 
+=begin rdoc
+requires an IB::Order as parameter.
 
 If attached, the associated IB::Contract is used to specify the tws-command
 
@@ -65,9 +65,9 @@ auto_adjust: Limit- and Aux-Prices are adjusted to Min-Tick
 convert_size: The action-attribute (:buy  :sell) is associated according the content of :total_quantity.
 
 
-The parameter «order» is modified! 
+The parameter «order» is modified!
 
-It can be used to modify and eventually cancel 
+It can be used to modify and eventually cancel
 
 The method raises an  IB::TransmissionError if the transmitted order ist not acknowledged by the tws after
 one second.
@@ -79,23 +79,23 @@ Example
    g =  IB::Gateway.current.clients.last
 
 	 g.preview contract: j36, order: order
-      => {:init_margin=>0.10864874e6, 
-			    :maint_margin=>0.9704137e5, 
-					:equity_with_loan=>0.97877973e6, 
-					:commission=>0.524e1, 
-					:commission_currency=>"USD", 
+      => {:init_margin=>0.10864874e6,
+			    :maint_margin=>0.9704137e5,
+					:equity_with_loan=>0.97877973e6,
+					:commission=>0.524e1,
+					:commission_currency=>"USD",
 					:warning=>""}
 
    the_local_id = g.place order: order
 		  => 67						# returns local_id
-	 order.contract			# updated contract-record 
-      => #<IB::Contract:0x00000000013c94b0 @attributes={:con_id=>95346693, 
-			                                                   :exchange=>"SGX", 
-																												 :right=>"", 
-																												 :include_expired=>false}> 
+	 order.contract			# updated contract-record
+      => #<IB::Contract:0x00000000013c94b0 @attributes={:con_id=>95346693,
+			                                                   :exchange=>"SGX",
+																												 :right=>"",
+																												 :include_expired=>false}>
 
 		order.limit_price = 65   # set new price
-	  g.modify order: order    # and transmit 
+	  g.modify order: order    # and transmit
 		  => 67 # returns local_id
 
 		g.locate_order( local_id: the_local_id  )
@@ -103,18 +103,21 @@ Example
 
 		g.cancel order: order
 				# logger output: 05:17:11 Cancelling 65 New #250/ from 3000/DU167349>
-	 
 =end
 
-		def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false
+		def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false,  enable_error: false
 			# adjust the orderprice to  min-tick
-			logger.progname =  'Account#PlaceOrder' 
+			logger.progname =  'Account#PlaceOrder'
 			result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
 			#·IB::Symbols are always qualified. They carry a description-field
-			qualified_contract = ->(c) { c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) || 
+			qualified_contract = ->(c) { c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) ||
 																c.con_id <0  && c.sec_type == :bag  }
-			order.contract = contract.verify.first if contract.present? && order.contract.nil? 
+			order.contract = contract.verify.first if contract.present? && order.contract.nil?
 
+      if order.contract.nil?
+       error "No valid contract given" if enable_error
+       return 0
+      end 
 			## sending of plain vanilla IB::Bags will fail using account.place, unless a (negative) con-id is provided!
 #			error "place order: ContractVerification failed. No con_id assigned"  unless qualified_contract[order.contract]
 			ib = IB::Connection.current
@@ -124,11 +127,13 @@ Example
 			### Handle Error messages
 			### Default action:  display error in log and return nil
 			sa = ib.subscribe( :Alert ) do | msg |
+        puts "local_id: #{the_local_id}"
 				if msg.error_id == the_local_id
-				 if [ 110, #  The price does not conform to the minimum price variation for this contract
+				 if [ 110, #  The price does not confirm to the minimum price variation for this contract
 					   388,  # Order size x is smaller than the minimum required size of yy.
 					  ].include? msg.code
-					 wrong_order =  msg.error_id.to_i  
+           error msg.message if enable_error
+           wrong_order =  msg.error_id.to_i
 					 ib.logger.error msg.message
 				 end
 				end
@@ -138,18 +143,18 @@ Example
 				self.orders.update_or_create order, :order_ref
 				order.auto_adjust # if auto_adjust  /defined in lib/order_handling
 			end
-			if convert_size 
-			 	order.action = order.total_quantity.to_i > 0  ? 	:buy : :sell 
+			if convert_size
+				order.action = order.total_quantity.to_i > 0  ?	:buy : :sell
+        logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
 				order.total_quantity  = order.total_quantity.to_i.abs
 			end
 				# apply non_guarenteed and other stuff bound to the contract to order.
 			order.attributes.merge! order.contract.order_requirements unless order.contract.order_requirements.blank?
 				#  con_id and exchange fully qualify a contract, no need to transmit other data
-			the_contract = order.contract.con_id >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil 
+			the_contract = order.contract.con_id >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil
 			the_local_id = order.place the_contract # return the local_id
-			Timeout::timeout(1, IB::TransmissionError,"TimeOut ::Transmitted Order was not acknowledged") do 
-				loop{ sleep(0.001); break if locate_order( local_id: the_local_id, status: nil ).present? }
-			end
+      i=0;	loop{i+=1; sleep(0.01); break if locate_order( local_id: the_local_id, status: nil ).present? || i> 1000  }
+      Connection.logger.error { "No ContractData received for #{the_contract.to_human} "} if i > 1000 
 
 			ib.unsubscribe sa
 
@@ -158,10 +163,10 @@ Example
 			else
 				nil
 			end
-		end # place 
+		end # place
 
 		# shortcut to enable
-		#  account.place order: {} , contract: {} 
+		#  account.place order: {} , contract: {}
 		#  account.preview order: {} , contract: {}
 		#  account.modify order: {}
 		alias place place_order
@@ -171,7 +176,7 @@ Account#ModifyOrder operates in two modi:
 
 First: The order is specified  via local_id, perm_id or order_ref.
 	It is checked, whether the order is still modificable.
-	Then the Order ist provided through  the block. Any modification is done there. 
+	Then the Order ist provided through  the block. Any modification is done there.
 	Important: The Block has to return the modified IB::Order
 
 Second: The order can be provided as parameter as well. This will be used

@@ -65,7 +65,7 @@ Everything is carried out in a mutex-synchonized environment
 					o.executions << msg.execution 
 					if  msg.execution.cumulative_quantity.to_i == o.total_quantity.abs
 						logger.info{ "#{o.account} --> #{o.contract.symbol}: Execution completed" }
-						o.order_states.first_or_create(  IB::OrderState.new( perm_id: o.perm_id, local_id: o.local_id,
+						otorder_states.first_or_create(  IB::OrderState.new( perm_id: o.perm_id, local_id: o.local_id,
 
 																																status: 'Filled' ),  :status )
 						# update portfoliovalue
@@ -100,9 +100,7 @@ Everything is carried out in a mutex-synchonized environment
 		subscription = tws.subscribe(  :OpenOrderEnd ){ exit_condition = true }
 		account_data{| account | account.orders=[] }
 		send_message :RequestAllOpenOrders
-		Timeout::timeout(1, IB::TransmissionError,"OpenOrders not received" ) do
-			loop{  sleep 0.1; break if exit_condition  }
-		end
+      i=0; loop{ i+=1; sleep 0.01;  break if i > 1000 || exit_condition }
 		tws.unsubscribe subscription
 	end
 

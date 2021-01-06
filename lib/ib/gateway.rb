@@ -205,6 +205,10 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 			# initialize @accounts (incl. aliases)
 			tws.send_message :RequestFA, fa_data_type: 3
 			logger.debug { "Communications successfully established" }
+      # update open orders
+			if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
+        request_open_orders
+      end
 		end	# def
 
 
@@ -321,28 +325,31 @@ If called without a parameter, all clients are accessed
 
 		def prepare_connection &b
 			tws.disconnect if tws.is_a? IB::Connection
-			self.tws = IB::Connection.new  **@connection_parameter 
+			self.tws = IB::Connection.new  **@connection_parameter
 			@accounts = @local_orders = Array.new
 
 			# prepare Advisor-User hierachy
 			initialize_managed_accounts if @gateway_parameter[:s_m_a]
 			initialize_alerts if @gateway_parameter[:s_a]
-			initialize_order_handling if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d] 
+			if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
+        initialize_order_handling
+#        request_open_orders
+      end
 			## apply other initialisations which should apper before the connection as block
 			## i.e. after connection order-state events are fired if an open-order is pending
 			## a possible response is best defined before the connect-attempt is done
 			# ##  Attention
 			# ##  @accounts are not initialized yet (empty array)
-			if block_given? 
+			if block_given?
 				yield  self
 
 			end
 		end
 
 =begin
-InitializeManagedAccounts 
+InitializeManagedAccounts
 defines the Message-Handler for :ManagedAccounts
-Its always active. 
+Its always active.
 =end
 
 		def initialize_managed_accounts

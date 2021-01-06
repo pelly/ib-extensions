@@ -85,6 +85,8 @@ read_yml = -> (key) do
   unless  C.received[:OpenOrder].blank?
         puts "------------------------------- OpenOrders ----------------------------------"
     puts C.received[:OpenOrder].to_human.join "\n"
+    puts  " ---------------- Open Orders are present in G.clients.orders --------------"
+    puts ""
   end
   puts  "Connection established on Port  #{port}, client_id #{client_id} used"
   puts
@@ -94,4 +96,9 @@ read_yml = -> (key) do
   puts  "some basic Messages are subscribed and accordingly displayed"
   puts '-'* 45
 
+  begin
   IRB.start(__FILE__)
+  rescue  IB::OrderAttributeError => e
+    puts "OrderAtttributeerror"
+  end
+
