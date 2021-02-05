@@ -67,7 +67,7 @@ module IB
 			end
 
 			# initialise order with given attributes	
-			IB::Order.new the_arguments
+			IB::Order.new **the_arguments
 		end
 
 		def alternative_parameters

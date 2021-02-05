@@ -65,7 +65,7 @@ Everything is carried out in a mutex-synchonized environment
 					o.executions << msg.execution 
 					if  msg.execution.cumulative_quantity.to_i == o.total_quantity.abs
 						logger.info{ "#{o.account} --> #{o.contract.symbol}: Execution completed" }
-						otorder_states.first_or_create(  IB::OrderState.new( perm_id: o.perm_id, local_id: o.local_id,
+						o.order_states.first_or_create(  IB::OrderState.new( perm_id: o.perm_id, local_id: o.local_id,
 
 																																status: 'Filled' ),  :status )
 						# update portfoliovalue
