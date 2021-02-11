@@ -1,6 +1,11 @@
 module IB
 	class Alert
 
+    def self.alert_388 msg
+					   # Order size x is smaller than the minimum required size of yy.
+      IB::Gateway.logger.error  msg.inspect
+  #     error  msg, :order,  nil
+    end
 		def self.alert_202 msg
 			# do anything in a secure mutex-synchronized-environment
 			any_order = IB::Gateway.current.account_data do | account |

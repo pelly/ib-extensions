@@ -203,7 +203,7 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 				end
 			end
 			# initialize @accounts (incl. aliases)
-			tws.send_message :RequestFA, fa_data_type: 3
+			tws.send_message( :RequestFA, fa_data_type: 3) if fa?
 			logger.debug { "Communications successfully established" }
       # update open orders
 			if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
@@ -285,6 +285,13 @@ If only one Account is present,  Client and Advisor are identical.
 		def  clients
 			@accounts.find_all &:user? 
 		end
+
+# is the account a financial advisor
+   def fa?
+     !(advisor == clients.first)
+	 end
+
+
 =begin
 The Advisor is always the first account
 =end
