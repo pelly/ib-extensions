@@ -30,3 +30,8 @@
 * moving model/spread.rb to `ib-api`  Gem
 
 #### Preparation of a Gem-Release 
+
+* Gateway#connect: initializing order-array by calling :RequestAllOrders after establishing the connection.
+
+* Gateway#connect: Occasionally the request for AccountPositions/AllOrders fails. Then a reconnect is
+                   appropriate. This is now implemented.

@@ -130,12 +130,27 @@ IB::Gateway.new  serial_array: true (, ...)
 			prepare_connection &b
 			# finally connect to the tws
 			connect =  true if get_account_data
+				
 			if connect 
-				if connect(100)  # tries to connect for about 2h
-					get_account_data(watchlists: watchlists.map{|b| IB::Symbols.allocate_collection b})  if get_account_data
-					#    request_open_orders() if request_open_orders || get_account_data 
-				else
-					@accounts = []   # definitivley reset @accounts
+				i = 0
+				begin
+					i+=1
+					if connect(100)  # tries to connect for about 2h
+						get_account_data(watchlists: watchlists.map{|b| IB::Symbols.allocate_collection b})  if get_account_data
+						#    request_open_orders() if request_open_orders || get_account_data 
+					else
+						@accounts = []   # definitivley reset @accounts
+					end
+				rescue IB::Error => e
+					disconnect
+					logger.fatal e.message
+					if e.message =~ /NextLocalId is not initialized/
+						Kernel.exit
+					elsif i < 5
+						retry
+					else
+						raise "could not get account data"
+					end
 				end
 			end
 
