@@ -127,7 +127,7 @@ Example
 			### Handle Error messages
 			### Default action:  display error in log and return nil
 			sa = ib.subscribe( :Alert ) do | msg |
-        puts "local_id: #{the_local_id}"
+  #      puts "local_id: #{the_local_id}"
 				if msg.error_id == the_local_id
 				 if [ 110, #  The price does not confirm to the minimum price variation for this contract
 					   388,  # Order size x is smaller than the minimum required size of yy.
@@ -154,11 +154,12 @@ Example
 			the_contract = order.contract.con_id >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil
 			the_local_id = order.place the_contract # return the local_id
       i=0;	loop{i+=1; sleep(0.01); break if locate_order( local_id: the_local_id, status: nil ).present? || i> 1000  }
-      Connection.logger.error { "No ContractData received for #{the_contract.to_human} "} if i > 1000 
 
 			ib.unsubscribe sa
-
-			if wrong_order.nil?
+      if i > 1000
+        ib.logger.error { "Order not placed #{order.to_human} "} 
+        nil
+      elsif wrong_order.nil?
 				the_local_id  # return_value
 			else
 				nil

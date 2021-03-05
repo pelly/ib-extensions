@@ -221,9 +221,7 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 			tws.send_message( :RequestFA, fa_data_type: 3) if fa?
 			logger.debug { "Communications successfully established" }
       # update open orders
-			if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
-        request_open_orders
-      end
+      request_open_orders if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
 		end	# def
 
 
@@ -337,7 +335,7 @@ If called without a parameter, all clients are accessed
 					sa = account_or_id.is_a?(IB::Account) ? account_or_id :  @accounts.detect{|x| x.account == account_or_id }
 					safe[sa] if sa.is_a? IB::Account
 				else
-					clients.map{|sa| safe[sa]}
+					clients.map{|s| safe[s]}
 				end
 			end
 		end
@@ -353,10 +351,7 @@ If called without a parameter, all clients are accessed
 			# prepare Advisor-User hierachy
 			initialize_managed_accounts if @gateway_parameter[:s_m_a]
 			initialize_alerts if @gateway_parameter[:s_a]
-			if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
-        initialize_order_handling
-#        request_open_orders
-      end
+      initialize_order_handling if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
 			## apply other initialisations which should apper before the connection as block
 			## i.e. after connection order-state events are fired if an open-order is pending
 			## a possible response is best defined before the connect-attempt is done

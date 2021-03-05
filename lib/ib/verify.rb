@@ -207,7 +207,7 @@ module IB
 #																	got: #{item_values[necessary_attributes].join(',')}"
 #				end
 	#			Contract.build  item_attributehash[necessary_items].merge(:sec_type=> sec_type)  # return this
-				Contract.build  self.attributes # return this
+				Contract.build  self.invariant_attributes # return this
 			else   # its always possible, to retrieve a Contract if con_id and exchange  or are present
 				Contract.new  con_id: con_id , :exchange => exchange.presence || item_attributehash[nessesary_attributes][:exchange].presence || 'SMART'				# return this
 			end  # if
