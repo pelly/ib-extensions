@@ -21,91 +21,87 @@ class Contract
 			ib =  Connection.current
 
 			## Enable Cashing of Definition-Matrix
-			@option_chain_definition ||= [] 
+      @option_chain_definition ||= [] 
 
-			my_req = nil; finalize= false
-			
-			# -----------------------------------------------------------------------------------------------------
-			# get OptionChainDefinition from IB ( instantiate cashed Hash )
-			if @option_chain_definition.blank?
-				sub_sdop = ib.subscribe( :SecurityDefinitionOptionParameterEnd ) { |msg| finalize = true if msg.request_id == my_req }
-				sub_ocd =  ib.subscribe( :OptionChainDefinition ) do | msg |
-					if msg.request_id == my_req
-						message =  msg.data
-						# transfer the first record to @option_chain_definition
-						if @option_chain_definition.blank?
-							@option_chain_definition =  msg.data
+      my_req = nil; finalize= false
 
-						end
-						# override @option_chain_definition if a decent combination of attributes is met
-						# us- options:  use the smart dataset
-						# other options: prefer options of the default trading class 
-						if message[:exchange] == 'SMART'	
-							@option_chain_definition =  msg.data
-							finalize = true
-						end
-						if @option_chain_definition.blank? &&  message[:trading_class] == symbol 
-							@option_chain_definition =  msg.data
-						end
-					end
-				end
+      # -----------------------------------------------------------------------------------------------------
+      # get OptionChainDefinition from IB ( instantiate cashed Hash )
+      if @option_chain_definition.blank?
+        sub_sdop = ib.subscribe( :SecurityDefinitionOptionParameterEnd ) { |msg| finalize = true if msg.request_id == my_req }
+        sub_ocd =  ib.subscribe( :OptionChainDefinition ) do | msg |
+          if msg.request_id == my_req
+            message =  msg.data
+            # transfer the first record to @option_chain_definition
+            if @option_chain_definition.blank?
+              @option_chain_definition =  msg.data
 
-				c = verify.first  #  ensure a complete set of attributes
-				my_req = ib.send_message :RequestOptionChainDefinition, con_id: c.con_id,
-					symbol: c.symbol,
-					exchange: c.sec_type == :future ? c.exchange : "", # BOX,CBOE',
-					sec_type: c[:sec_type]
+            end
+            # override @option_chain_definition if a decent combination of attributes is met
+            # us- options:  use the smart dataset
+            # other options: prefer options of the default trading class 
+            if message[:exchange] == 'SMART'	
+              @option_chain_definition =  msg.data
+              finalize = true
+            end
+            if @option_chain_definition.blank? &&  message[:trading_class] == symbol 
+              @option_chain_definition =  msg.data
+            end
+          end
+        end
 
-				Thread.new do  
+        c = verify.first  #  ensure a complete set of attributes
+        my_req = ib.send_message :RequestOptionChainDefinition, con_id: c.con_id,
+          symbol: c.symbol,
+          exchange: c.sec_type == :future ? c.exchange : "", # BOX,CBOE',
+          sec_type: c[:sec_type]
 
-					Timeout::timeout(1, IB::TransmissionError,"OptionChainDefinition not received" ) do
-						loop{ sleep 0.1; break if finalize } 
-					end
-					ib.unsubscribe sub_sdop , sub_ocd
-				end.join
-		else
-			Connection.logger.error { "#{to_human} : using cached data" }
-		end
+        i=0; loop { sleep 0.1; break if i> 1000 || finalize; i+=1 } 
+
+        ib.unsubscribe sub_sdop , sub_ocd
+      else
+        Connection.logger.info { "#{to_human} : using cached data" }
+      end
 
 		# -----------------------------------------------------------------------------------------------------
 		# select values and assign to options
 		#
 		unless @option_chain_definition.blank? 
-			requested_strikes =  if block_given?
-														 ref_price = market_price if ref_price == :request
-														 if ref_price.nil?
-															 ref_price =	 @option_chain_definition[:strikes].min  +
-																 ( @option_chain_definition[:strikes].max -  
-																	@option_chain_definition[:strikes].min ) / 2 
-																 Connection.logger.error{  "#{to_human} :: market price not set – using midpoint of available strikes instead: #{ref_price.to_f}" }
-														 end
-														 atm_strike = @option_chain_definition[:strikes].min_by { |x| (x - ref_price).abs }
-														 the_grouped_strikes = @option_chain_definition[:strikes].group_by{|e| e <=> atm_strike}	
-														 begin
-															 the_strikes =		yield the_grouped_strikes
-															 the_strikes.unshift atm_strike unless the_strikes.first == atm_strike	  # the first item is the atm-strike
-															 the_strikes
-														 rescue
-															 Connection.logger.error "#{to_human} :: not enough strikes :#{@option_chain_definition[:strikes].map(&:to_f).join(',')} "
-															 []
-														 end
-													 else
-														 @option_chain_definition[:strikes]
-													 end
+			requested_strikes =  if block_given?  
+                          ref_price = market_price if ref_price == :request
+                          if ref_price.nil?
+                            ref_price =	 @option_chain_definition[:strikes].min  +
+                              ( @option_chain_definition[:strikes].max -  
+                               @option_chain_definition[:strikes].min ) / 2 
+                            Connection.logger.warn { "#{to_human} :: market price not set – using midpoint of available strikes instead: #{ref_price.to_f}" }
+                          end
+                          atm_strike = @option_chain_definition[:strikes].min_by { |x| (x - ref_price).abs }
+                          the_grouped_strikes = @option_chain_definition[:strikes].group_by{|e| e <=> atm_strike}	
+                          begin
+                            the_strikes =		yield the_grouped_strikes
+                            the_strikes.unshift atm_strike unless the_strikes.first == atm_strike	  # the first item is the atm-strike
+                            the_strikes
+                          rescue
+                            Connection.logger.error "#{to_human} :: not enough strikes :#{@option_chain_definition[:strikes].map(&:to_f).join(',')} "
+                            []
+                          end
+                           else
+                             @option_chain_definition[:strikes]
+                           end
 
 				# third Friday of a month
 				monthly_expirations =  @option_chain_definition[:expirations].find_all{|y| (15..21).include? y.day }
 #				puts @option_chain_definition.inspect
 				option_prototype = -> ( ltd, strike ) do 
-						IB::Option.new( symbol: symbol, 
-													 exchange: @option_chain_definition[:exchange],
-													 trading_class: @option_chain_definition[:trading_class],
-													 multiplier: @option_chain_definition[:multiplier],
-													 currency: currency,  
-													 last_trading_day: ltd, 
-													 strike: strike, 
-													 right: right )
-				end
+						IB::Option.new symbol: symbol, 
+                           exchange: @option_chain_definition[:exchange], 
+                           trading_class: @option_chain_definition[:trading_class], 
+                           multiplier: @option_chain_definition[:multiplier], 
+                           currency: currency,  
+                           last_trading_day: ltd, 
+                           strike: strike, 
+                           right: right  
+        end
 				options_by_expiry = -> ( schema ) do
 					# Array: [ yymm -> Options] prepares for the correct conversion to a Hash
 					Hash[  monthly_expirations.map do | l_t_d |
