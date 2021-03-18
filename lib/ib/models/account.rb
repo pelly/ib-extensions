@@ -110,9 +110,13 @@ Example
 			logger.progname =  'Account#PlaceOrder'
 			result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
 			#·IB::Symbols are always qualified. They carry a description-field
-			qualified_contract = ->(c) { c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) ||
-																c.con_id <0  && c.sec_type == :bag  }
-			order.contract = contract.verify.first if contract.present? && order.contract.nil?
+      qualified_contract = ->(c) { c.is_a?(IB::Contract) && ( c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) || (c.con_id.to_i <0  && c.sec_type == :bag )) }
+
+			order.contract ||=  if qualified_contract[ contract ]
+                        contract
+                         else
+                           contract.verify.first
+                         end
 
       if order.contract.nil?
        error "No valid contract given" if enable_error
@@ -125,7 +129,7 @@ Example
 			the_local_id =  nil
 
 			### Handle Error messages
-			### Default action:  display error in log and return nil
+			### Default action:  raise IB::Transmission Error
 			sa = ib.subscribe( :Alert ) do | msg |
   #      puts "local_id: #{the_local_id}"
 				if msg.error_id == the_local_id
@@ -139,10 +143,8 @@ Example
 				end
 			end
 			order.account =  account  # assign the account_id to the account-field of IB::Order
-			if qualified_contract[order.contract]
-				self.orders.update_or_create order, :order_ref
-				order.auto_adjust # if auto_adjust  /defined in lib/order_handling
-			end
+      self.orders.update_or_create order, :order_ref
+      order.auto_adjust # if auto_adjust  /defined in lib/order_handling
 			if convert_size
 				order.action = order.total_quantity.to_i > 0  ?	:buy : :sell
         logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
@@ -156,14 +158,8 @@ Example
       i=0;	loop{i+=1; sleep(0.01); break if locate_order( local_id: the_local_id, status: nil ).present? || i> 1000  }
 
 			ib.unsubscribe sa
-      if i > 1000
-        ib.logger.error { "Order not placed #{order.to_human} "} 
-        nil
-      elsif wrong_order.nil?
-				the_local_id  # return_value
-			else
-				nil
-			end
+      raise IB::TransmissionError," #{order.to_human} is not transmitted properly" if i >=1000
+      the_local_id  # return_value
 		end # place
 
 		# shortcut to enable
@@ -220,9 +216,9 @@ This has to be done manualy in the provided block
 		order.what_if = true
 		the_local_id = place_order order: order, contract: contract
 		i=0; loop{ i= i+1;  break if result[the_local_id] || i > 1000; sleep 0.01 }
-		raise IB::TransmissionError,"(Preview-)Order is not transmitted properly" if i >=1000
+    raise IB::TransmissionError,"(Preview-) #{order.to_human} is not transmitted properly" if i >=1000
 		order.what_if = false # reset what_if flag
-		order.local_id = nil  # reset local_id to enable reusage of the order-object for placing
+		order.local_id = nil  # reset local_id to enable re-using the order-object for placing
 		result[the_local_id].order_state.forcast  #  return_value
 	end 
 
