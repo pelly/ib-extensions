@@ -106,7 +106,7 @@ raises an IB::Error if less then 100 items are recieved-
 #								.portfolio_values
 #								.update_or_create( msg.portfolio_value ) { :account } 
 						logger.debug { "#{ account.account } :: #{ msg.contract.to_human }" }
-					end # case
+        end # case
 			end # account_data 
 		end # subscribe
 	end  # def 
