@@ -43,7 +43,7 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 												orders.find_all{|x| x[search_option.first].to_i == search_option.last.to_i }
 											end
       if contract.present?
-        if contract.con_id.nil? || contract.con_id.empty? || contract.con_id.zero? 
+        if contract.con_id.nil? || contract.con_id =="" || contract.con_id.zero? 
           contrat =  contract.verify.first unless contract.is_a? IB::Bag
         end
         matched_items = matched_items.find_all{|o| o.contract.essential == contract.essential } 
