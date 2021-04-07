@@ -33,7 +33,7 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 (If multible keys are specified, local_id preceeds perm_id)
 
 =end
-		def locate_order local_id: nil, perm_id: nil, order_ref: nil, status: /ubmitted/, con_id: nil
+		def locate_order local_id: nil, perm_id: nil, order_ref: nil, status: /ubmitted/, contract: nil, con_id: nil
 			search_option= [ local_id.present? ? [:local_id , local_id] : nil ,
 										perm_id.present? ? [:perm_id, perm_id] : nil,
 										order_ref.present? ? [:order_ref , order_ref ] : nil ].compact.first
@@ -42,7 +42,14 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 											else
 												orders.find_all{|x| x[search_option.first].to_i == search_option.last.to_i }
 											end
-			matched_items = matched_items.find_all{|x| x.contract.con_id == con_id } if con_id.present?
+      if contract.present?
+        if contract.con_id.nil? || contract.con_id =="" || contract.con_id.zero? 
+          contract =  contract.verify.first unless contract.is_a? IB::Bag
+        end
+        matched_items = matched_items.find_all{|o| o.contract.essential == contract.essential } 
+      elsif con_id.present?
+        matched_items = matched_items.find_all{|o| o.contract.con_id == con_id } 
+      end
 
 			if status.present?
 				status = Regexp.new(status) unless status.is_a? Regexp
