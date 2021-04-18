@@ -19,7 +19,7 @@ module IB
 				def  fabricate *underlying,  ratio: [1,-1], **args
 					#
 					are_stocks =  ->(l){ l.all?{|y| y.is_a? IB::Stock} }
-					legs = underlying.map{|y| y.is_a?( IB::Stock ) ? y.merge(args) : IB::Stock.new( symbol: y ).merge(args)}
+					legs = underlying.map{|y| y.is_a?( IB::Stock ) ? y.merge(**args) : IB::Stock.new( symbol: y ).merge(**args)}
 					error "only spreads with two underyings of type »IB::Stock« are supported" unless legs.size==2 && are_stocks[legs]
 					initialize_spread( legs.first ) do | the_spread |
 						c_l = legs.zip(ratio).map do |l,r| 
