@@ -51,21 +51,21 @@ require 'active_support/core_ext/date/calculations'
 		end
 	end
 	class Contract
-		# Receive EOD-Data 
-		#  
+		# Receive EOD-Data
+		#
 		# The Enddate has to be specified (as Date Object), t
 		#
-		# The Duration can either be specified as Sting " yx D" or as Integer. 
+		# The Duration can either be specified as Sting " yx D" or as Integer.
 		# Altenative a start date can be specified with the :start parameter.
 		#
-		# The parameter :what specified the kind of received data: 
+		# The parameter :what specified the kind of received data:
 		#  Valid values:
 		#   :trades, :midpoint, :bid, :ask, :bid_ask,
 		#   :historical_volatility, :option_implied_volatility,
 		#   :option_volume, :option_open_interest
-		# 
+		#
 		# The results can be preprocessed through a block, thus
-		#  
+		#
 		# puts IB::Symbols::Index::stoxx.eod( duration: '10 d')){|r| r.to_human}
 		#   <Bar: 2019-04-01 wap 0.0 OHLC 3353.67 3390.98 3353.67 3385.38 trades 1750 vol 0>
 		#   <Bar: 2019-04-02 wap 0.0 OHLC 3386.18 3402.77 3382.84 3395.7 trades 1729 vol 0>
@@ -79,23 +79,23 @@ require 'active_support/core_ext/date/calculations'
 		#   <Bar: 2019-04-12 wap 0.0 OHLC 3432.16 3454.77 3425.84 3447.83 trades 1715 vol 0>
 		#
 		# «to_human« is not needed here because ist aliased with `to_s`
-		# 
-		# puts Symbols::Stocks.wfc.eod(  start: Date.new(2019,10,9), duration: 3 ) 
+		#
+		# puts Symbols::Stocks.wfc.eod(  start: Date.new(2019,10,9), duration: 3 )
 		#		<Bar: 2020-10-23 wap 23.3675 OHLC 23.55 23.55 23.12 23.28 trades 5778 vol 50096>
 		#		<Bar: 2020-10-26 wap 22.7445 OHLC 22.98 22.99 22.6 22.7 trades 6873 vol 79560>
 		#		<Bar: 2020-10-27 wap 22.086 OHLC 22.55 22.58 21.82 21.82 trades 7503 vol 97691>
 
-		# puts Symbols::Stocks.wfc.eod(  to: Date.new(2019,10,9), duration: 3 ) 
+		# puts Symbols::Stocks.wfc.eod(  to: Date.new(2019,10,9), duration: 3 )
 		#		<Bar: 2019-10-04 wap 48.964 OHLC 48.61 49.25 48.54 49.21 trades 9899 vol 50561>
 		#		<Bar: 2019-10-07 wap 48.9445 OHLC 48.91 49.29 48.75 48.81 trades 10317 vol 50189>
 		#		<Bar: 2019-10-08 wap 47.9165 OHLC 48.25 48.34 47.55 47.82 trades 12607 vol 53577>
 		#
-		def eod start:nil, to: Date.today, duration: nil , what: :trades 
+		def eod start:nil, to: Date.today, duration: nil , what: :trades
 
 			tws = IB::Connection.current
 			recieved =  Queue.new
 			r = nil
-      # the hole response is transmitted at once! 
+      # the hole response is transmitted at once!
 			a= tws.subscribe(IB::Messages::Incoming::HistoricalData) do |msg|
 				if msg.request_id == con_id
 					#					msg.results.each { |entry| puts "  #{entry}" }
@@ -108,11 +108,10 @@ require 'active_support/core_ext/date/calculations'
 					tws.logger.info msg.message
 					# TWS Error 200: No security definition has been found for the request
 					# TWS Error 354: Requested market data is not subscribed.
-				  # TWS Error 162  # Historical Market Data Service error 
-					recieved =[]
+				  # TWS Error 162  # Historical Market Data Service error
+          recieved.close
 				end
 		  end
-			
 
 			duration =  if duration.present?
 										duration.is_a?(String) ? duration : duration.to_s + " D"
@@ -133,12 +132,12 @@ require 'active_support/core_ext/date/calculations'
 				:format_date => 2,
 				:keep_up_todate => 0)
 
-			Timeout::timeout(50) do   # max 5 sec.
-				sleep 0.1 
+			Timeout::timeout(5) do   # max 5 sec.
+				sleep 0.1
 				last_time =  recieved.pop # blocks until a message is ready on the queue
 				loop do
 					sleep 0.1
-					break if recieved.empty?  # finish if no more data received
+          break if recieved.closed? || recieved.empty?  # finish if  data received
 				end
 			tws.unsubscribe a
 			tws.unsubscribe b

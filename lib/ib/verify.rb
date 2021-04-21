@@ -15,42 +15,39 @@ module IB
 		# The method accepts a block. The  queried contract-Object is accessible there.
 		# If multiple contracts are specified, the block is executed with each of these contracts.
 		#
+		#
+    # Verify returns an  _Array_ of contracts. The  operation leaves the contract untouched.
+    # 
+    #
+		# Returns nil if the contract could not be verified.
+		#
+		#	 > s =  Stock.new symbol: 'AA'
+		#     => #<IB::Stock:0x0000000002626cc0
+    #        @attributes={:symbol=>"AA", :con_id=>0, :right=>"", :include_expired=>false,
+		#                     :sec_type=>"STK", :currency=>"USD", :exchange=>"SMART"}
+    #  > sp  = s.verify.first.essential
+		#     => #<IB::Stock:0x00000000025a3cf8
+		#        @attributes={:symbol=>"AA", :con_id=>251962528, :exchange=>"SMART", :currency=>"USD",
+		#                     :strike=>0.0, :local_symbol=>"AA", :multiplier=>0, :primary_exchange=>"NYSE",
+		#                     :trading_class=>"AA", :sec_type=>"STK", :right=>"", :include_expired=>false}
+		#
+		#  > s =  Stock.new symbol: 'invalid'
+		#     =>  @attributes={:symbol=>"invalid", :sec_type=>"STK", :currency=>"USD", :exchange=>"SMART"}
+		#  >  sp  = s.verify
+		#     => []
+    #
+    # Takes a Block to modify the queried contracts
+    #
+    # f = Future.new  symbol: 'M2K'  
+    # con_ids =  f.verify{ |c| c.con_id }
+    #   [412889018, 428519982, 446091466, 461318872, 477836981] 
+    #
+    #
 		# Parameter: thread: (true/false)
 		#
-		# The verifying-process ist time consuming. If multiple contracts are to be verified,
-		# they can be queried simultaneously.
+		# If multiple contracts are to be verified, they can be queried simultaneously.
 		#    IB::Symbols::W500.map{|c|  c.verify(thread: true){ |vc| do_something }}.join
-		#
-		# A simple verification works as follows:
-		#
-		#  s = IB::Stock.new symbol:"A"
-		#  s --> <IB::Stock:0x007f3de81a4398
-		#	  @attributes= {"symbol"=>"A", "sec_type"=>"STK", "currency"=>"USD", "exchange"=>"SMART"}>
-		#  s.verify   --> 1
-		#  # s is unchanged !
-		#
-		#  s.verify{ |c| puts c.inspect }
-		#   --> <IB::Stock:0x007f3de81a4398
-		#       @attributes={"symbol"=>"A",  "updated_at"=>2015-04-17 19:20:00 +0200,
-		#		  "sec_type"=>"STK", "currency"=>"USD", "exchange"=>"SMART",
-		#		  "con_id"=>1715006, "expiry"=>"", "strike"=>0.0, "local_symbol"=>"A",
-		#		  "multiplier"=>0, "primary_exchange"=>"NYSE"},
-		#       @contract_detail=#<IB::ContractDetail:0x007f3de81ed7c8
-		#		    @attributes={"market_name"=>"A", "trading_class"=>"A", "min_tick"=>0.01,
-		#		    "order_types"=>"ACTIVETIM, (...),WHATIF,",
-		#		    "valid_exchanges"=>"SMART,NYSE,CBOE,ISE,CHX,(...)PSX",
-		#		    "price_magnifier"=>1, "under_con_id"=>0,
-		#		    "long_name"=>"AGILENT TECHNOLOGIES INC", "contract_month"=>"",
-		#		    "industry"=>"Industrial", "category"=>"Electronics",
-		#		    "subcategory"=>"Electronic Measur Instr", "time_zone"=>"EST5EDT",
-		#		    "trading_hours"=>"20150417:0400-2000;20150420:0400-2000",
-		#		    "liquid_hours"=>"20150417:0930-1600;20150420:0930-1600",
-		#		    "ev_rule"=>0.0, "ev_multiplier"=>"", "sec_id_list"=>{},
-		#		    "updated_at"=>2015-04-17 19:20:00 +0200, "coupon"=>0.0,
-		#		    "callable"=>false, "puttable"=>false, "convertible"=>false,
-		#		    "next_option_partial"=>false}>>
-		#
-		#
+
 		def  verify  thread: nil,  &b
 			return [self] if contract_detail.present? || sec_type == :bag
 			_verify update: false, thread: thread,  &b  # returns the allocated threads
@@ -68,31 +65,14 @@ module IB
 																																				# if the contract allows SMART routing
 		end
 
-		# Verify that the contract is a valid IB::Contract, update the Contract-Object and return it.
-		#
-		# Returns nil if the contract could not be verified.
-		#
-		#	 > s =  Stock.new symbol: 'AA'
-		#     => #<IB::Stock:0x0000000002626cc0
-    #        @attributes={:symbol=>"AA", :con_id=>0, :right=>"", :include_expired=>false,
-		#                     :sec_type=>"STK", :currency=>"USD", :exchange=>"SMART"}
-		#  > sp  = s.verify! &.essential
-		#     => #<IB::Stock:0x00000000025a3cf8
-		#        @attributes={:symbol=>"AA", :con_id=>251962528, :exchange=>"SMART", :currency=>"USD",
-		#                     :strike=>0.0, :local_symbol=>"AA", :multiplier=>0, :primary_exchange=>"NYSE",
-		#                     :trading_class=>"AA", :sec_type=>"STK", :right=>"", :include_expired=>false}
-		#
-		#  > s =  Stock.new symbol: 'invalid'
-		#     =>  @attributes={:symbol=>"invalid", :sec_type=>"STK", :currency=>"USD", :exchange=>"SMART"}
-		#  >  sp  = s.verify! &.essential
-		#     => nil
-
+    #
+    #   depreciated:  Do not use  anymore
 		def verify!
-			return self if contract_detail.present? || sec_type == :bag
 			c =  0
+      IB::Connection.logger.warn "Contract.verify! is depreciated. Use \"contract =  contract.verify.first\" instead"
 			_verify( update: true){| response | c+=1 } # wait for the returned thread to finish
 			IB::Connection.logger.error { "Multible Contracts detected during verify!."  } if c > 1
-			con_id.to_i < 0 || contract_detail.is_a?(ContractDetail) ? self :  nil
+			self
 		end
 
 #		private
@@ -113,9 +93,10 @@ module IB
 			# we generate a Request-Message-ID on the fly
 			message_id = nil
 			# define local vars which are updated within the query-block
-			exitcondition, count , queried_contract, r, a = false, 0, nil, [], nil
+      recieved_contracts = []
+			exitcondition, count , a = false, 0, nil
 
-			# currently the tws-request is suppressed for bags and if the contract_detail-record is present
+			# a tws-request is suppressed for bags and if the contract_detail-record is present
 			tws_request_not_nessesary = bag? || contract_detail.is_a?( ContractDetail )
 
       if tws_request_not_nessesary
@@ -135,20 +116,18 @@ module IB
               # Only the last contract is saved in self;  'count' is incremented
               count +=1
               ## a specified block gets the contract_object on any unique ContractData-Event
-              r << if block_given?
-                     yield msg.contract
-              elsif count > 1
-                queried_contract = msg.contract  # used by the logger (below) in case of multiple contracts
-              else
-                msg.contract
-              end
+              recieved_contracts << if block_given?
+                                      yield msg.contract
+                                    else
+                                      msg.contract
+                                    end
               if update
                 self.attributes = msg.contract.attributes
                 self.contract_detail = msg.contract_detail unless msg.contract_detail.nil?
               end
             end
           when Messages::Incoming::ContractDataEnd
-            exitcondition = true if msg.request_id.to_i ==  message_id
+            exitcondition = msg.request_id.to_i ==  message_id
 
           end  # case
         end # subscribe
@@ -161,12 +140,12 @@ module IB
 
         th =  Thread.new do
           j=0; loop{ j+=1; break if exitcondition || j> 1000 ; sleep 0.001 }
-          Connection.logger.error{ "#{to_human} --> No ContractData recieved " } if j > 1000
+          ib.logger.error{ "#{to_human} --> No ContractData recieved " } if j > 1000
           ib.unsubscribe a
         end
         if thread.nil?
           th.join    # wait for the thread to finish
-          r			 # return array of contracts
+          recieved_contracts			 # return queue of contracts
         else
           th			# return active thread
         end

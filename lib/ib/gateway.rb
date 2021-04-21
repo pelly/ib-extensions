@@ -79,7 +79,7 @@ IB::Gateway.new  serial_array: true (, ...)
 
 		include LogDev   # provides default_logger
 		include AccountInfos  # provides Handling of Account-Data provided by the tws
-		include OrderHandling 
+		include OrderHandling
 
 		# include GWSupport   # introduces update_or_create, first_or_create and intercept to the Array-Class
 
@@ -91,21 +91,21 @@ IB::Gateway.new  serial_array: true (, ...)
 
 
 
-		def initialize  port: 4002, # 7497, 
+		def initialize  port: 4002, # 7497,
 			host: '127.0.0.1',   # 'localhost:4001' is also accepted
 			client_id:  random_id,
-			subscribe_managed_accounts: true, 
-			subscribe_alerts: true, 
-			subscribe_order_messages: true, 
-			connect: true, 
+			subscribe_managed_accounts: true,
+			subscribe_alerts: true,
+			subscribe_order_messages: true,
+			connect: true,
 			get_account_data: false,
-			serial_array: false, 
+			serial_array: false,
 			logger: default_logger,
 			watchlists: [] ,  # array of watchlists (IB::Symbols::{watchlist}) containing descriptions for complex positions
 			**other_agruments_which_are_ignored,
 			&b
 
-			host, port = (host+':'+port.to_s).split(':') 
+			host, port = (host+':'+port.to_s).split(':')
 
 			self.logger = logger
 			logger.info { '-' * 20 +' initialize ' + '-' * 20 }
@@ -115,7 +115,7 @@ IB::Gateway.new  serial_array: true (, ...)
 
 			@account_lock = Mutex.new
 			@watchlists = watchlists
-			@gateway_parameter = { s_m_a: subscribe_managed_accounts, 
+			@gateway_parameter = { s_m_a: subscribe_managed_accounts,
 													s_a: subscribe_alerts,
 													s_o_m: subscribe_order_messages,
 													g_a_d: get_account_data }
@@ -130,14 +130,14 @@ IB::Gateway.new  serial_array: true (, ...)
 			prepare_connection &b
 			# finally connect to the tws
 			connect =  true if get_account_data
-				
-			if connect 
+
+			if connect
 				i = 0
 				begin
 					i+=1
 					if connect(100)  # tries to connect for about 2h
 						get_account_data(watchlists: watchlists.map{|b| IB::Symbols.allocate_collection b})  if get_account_data
-						#    request_open_orders() if request_open_orders || get_account_data 
+						#    request_open_orders() if request_open_orders || get_account_data
 					else
 						@accounts = []   # definitivley reset @accounts
 					end
@@ -172,9 +172,9 @@ IB::Gateway.new  serial_array: true (, ...)
 
 		## ------------------------------------- connect ---------------------------------------------##
 =begin
-Zentrale Methode 
+Zentrale Methode
 Es wird ein Connection-Objekt (IB::Connection.current) angelegt.
-Sollte keine TWS vorhanden sein, wird eine entsprechende Meldung ausgegeben und der Verbindungsversuch 
+Sollte keine TWS vorhanden sein, wird ein entsprechende Meldung ausgegeben und der Verbindungsversuch
 wiederholt.
 Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 
@@ -182,7 +182,7 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 		def connect maximal_count_of_retry=100
 
 			i= -1
-			logger.progname =  'Gateway#connect' 
+			logger.progname =  'Gateway#connect'
 			begin
 				tws.connect
 			rescue  Errno::ECONNREFUSED => e
@@ -243,7 +243,7 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 
 			tws.disconnect if tws.present?
 			@accounts = [] # each{|y| y.update_attribute :connected,  false }
-			logger.info "Connection closed" 
+			logger.info "Connection closed"
 		end
 
 
@@ -273,7 +273,7 @@ Argument is either an order-object or a local_id
 
 =end
 
-		def cancel_order *orders 
+		def cancel_order *orders
 
 			logger.tap{|l| l.progname =  'Gateway#CancelOrder' }
 
@@ -290,13 +290,13 @@ Argument is either an order-object or a local_id
 		end
 
 =begin
-clients returns a list of Account-Objects 
+clients returns a list of Account-Objects
 
 If only one Account is present,  Client and Advisor are identical.
 
 =end
 		def  clients
-			@accounts.find_all &:user? 
+			@accounts.find_all &:user?
 		end
 
 # is the account a financial advisor
@@ -395,7 +395,7 @@ Its always active.
 		def initialize_alerts
 
 			tws.subscribe(  :AccountUpdateTime  ){| msg | logger.debug{ msg.to_human }}
-			tws.subscribe(:Alert) do |msg| 
+			tws.subscribe(:Alert) do |msg|
 				logger.progname = 'Gateway#Alerts'
 				logger.debug " ----------------#{msg.code}-----"
 				# delegate anything to IB::Alert
@@ -406,16 +406,16 @@ Its always active.
 
 		# Handy method to ensure that a connection is established and active.
 		#
-		# The connection is reset on the IB-side at least once a day. Then the 
-		# IB-Ruby-Connection has to be reestablished, too. 
-		# 
-		# check_connection reconnects if necessary and returns false if the connection is lost. 
-		# 
+		# The connection is reset on the IB-side at least once a day. Then the
+		# IB-Ruby-Connection has to be reestablished, too.
+		#
+		# check_connection reconnects if necessary and returns false if the connection is lost.
+		#
 		# It delays the process by 6 ms (150 MBit Cable connection)
 		#
 		#  a =  Time.now; G.check_connection; b= Time.now ;b-a
 		#   => 0.00066005
-		# 
+		#
 		def check_connection
 			answer = nil; count=0
 			z= tws.subscribe( :CurrentTime ) { answer = true }
