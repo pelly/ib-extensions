@@ -48,7 +48,6 @@ read_yml = -> (key) do
   puts 
   puts "Namespace is IB ! "
   puts
-  puts '-'* 45
  
   include IB
   require 'irb'
@@ -74,9 +73,9 @@ read_yml = -> (key) do
   ## and prior to the connection-process
   ## Here we just subscribe to some events  
 	begin
-		G =  Gateway.new  get_account_data: true, serial_array: true,
-			client_id: client_id, port: port, logger: logger,
-			watchlists: [:Spreads, :BuyAndHold]
+		G =  Gateway.new get_account_data: true, serial_array: true,
+			client_id: client_id, port: port ,  logger: logger,
+			watchlists: [:Spreads, :Stillhalter, :BuyAndHold]
 	rescue IB::TransmissionError => e
 		puts "E: #{e.inspect}"
 	end
@@ -99,6 +98,6 @@ read_yml = -> (key) do
   begin
   IRB.start(__FILE__)
   rescue  IB::OrderAttributeError => e
-    puts "OrderAtttributeerror"
+    puts "OrderAtttribute ERROR"
   end
 

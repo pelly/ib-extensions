@@ -30,7 +30,6 @@ raises an IB::Error if less then 100 items are recieved-
 =end
 	def get_account_data  *accounts,  watchlists: []
 
-		logger.progname = 'Gateway#get_account_data'
 
 		@account_data_subscription ||=   subscribe_account_updates
 

@@ -40,7 +40,6 @@ Important: The class is accessed asynchronically. Be careful while raising inter
     # acts as prototype for any generated method 
     #require 'active_support'
 
-    mattr_accessor :logger
 
 		def self.method_missing( method_id, msg , *args, &block )
 			if msg.is_a?  IB::Messages::Incoming::Alert
@@ -62,6 +61,9 @@ Important: The class is accessed asynchronically. Be careful while raising inter
 
 
       class << self
+  def logger
+    IB::Connection.logger || IB::Gateway.logger
+  end
 
 	def ignore_alert  *codes
 	  codes.each do |n|
