@@ -12,6 +12,7 @@ LogLevel = Logger::DEBUG  ##INFO # DEBUG # ERROR
 #require File.expand_path(File.dirname(__FILE__) + "/../config/boot")
 
 require 'ib-gateway'
+require 'ib/verify'
 require 'ib/market-price'
 require 'ib/option-chain'
 require 'ib/eod'
@@ -48,7 +49,6 @@ read_yml = -> (key) do
   puts 
   puts "Namespace is IB ! "
   puts
-  puts '-'* 45
  
   include IB
   require 'irb'
@@ -74,14 +74,16 @@ read_yml = -> (key) do
   ## and prior to the connection-process
   ## Here we just subscribe to some events  
 	begin
-		G =  Gateway.new  get_account_data: true, serial_array: true,
-			client_id: client_id, port: port, logger: logger,
-			watchlists: [:Spreads, :BuyAndHold]
+		G =  Gateway.new get_account_data: true, serial_array: true,
+			client_id: client_id, port: port ,  logger: logger,
+			watchlists: [:Spreads, :Stillhalter, :BuyAndHold]
 	rescue IB::TransmissionError => e
 		puts "E: #{e.inspect}"
 	end
 
 	C =  G.tws
+
+  C.subscribe(:TickGeneric, :TickOption, :TickRequestParameters, :MarketDataType, :TickString, :TickSize  ){|x| x }
   unless  C.received[:OpenOrder].blank?
         puts "------------------------------- OpenOrders ----------------------------------"
     puts C.received[:OpenOrder].to_human.join "\n"
@@ -98,7 +100,7 @@ read_yml = -> (key) do
 
   begin
   IRB.start(__FILE__)
-  rescue  IB::OrderAttributeError => e
-    puts "OrderAtttributeerror"
+  #rescue  IB::OrderAttributeError => e
+  #  puts "OrderAtttribute ERROR"
   end
 

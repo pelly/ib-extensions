@@ -37,7 +37,7 @@ end
 ## Connection helpers
 def establish_connection
 
-  ib = IB::Connection.new OPTS[:connection].merge(:logger => mock_logger)
+  ib = IB::Connection.new **OPTS[:connection].merge(:logger => mock_logger)
 	if ib
 		ib.wait_for :ManagedAccounts, 5
 

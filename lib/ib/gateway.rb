@@ -75,19 +75,18 @@ IB::Gateway.new  serial_array: true (, ...)
 
 =end
 
-	class Gateway
+  class Gateway
 
-		include LogDev   # provides default_logger
-		include AccountInfos  # provides Handling of Account-Data provided by the tws
-		include OrderHandling
+    include Support::Logging # provides default_logger
+    include AccountInfos     # provides Handling of Account-Data provided by the tws
+    include OrderHandling
 
-		# include GWSupport   # introduces update_or_create, first_or_create and intercept to the Array-Class
+    # include GWSupport   # introduces update_or_create, first_or_create and intercept to the Array-Class
 
-		# from active-support. Add Logging at Class + Instance-Level
-		mattr_accessor :logger
-		# similar to the Connection-Class: current represents the active instance of Gateway
-		mattr_accessor :current
-		mattr_accessor :tws
+    # from active-support. Add Logging at Class + Instance-Level
+    # similar to the Connection-Class: current represents the active instance of Gateway
+    mattr_accessor :current
+    mattr_accessor :tws
 
 
 
@@ -100,16 +99,16 @@ IB::Gateway.new  serial_array: true (, ...)
 			connect: true,
 			get_account_data: false,
 			serial_array: false,
-			logger: default_logger,
+      logger: nil, 
 			watchlists: [] ,  # array of watchlists (IB::Symbols::{watchlist}) containing descriptions for complex positions
 			**other_agruments_which_are_ignored,
 			&b
 
 			host, port = (host+':'+port.to_s).split(':')
 
-			self.logger = logger
-			logger.info { '-' * 20 +' initialize ' + '-' * 20 }
-			logger.tap{|l| l.progname =  'Gateway#Initialize' }
+      self.class.configure_logger logger
+
+      self.logger.info { '-' * 20 +' initialize ' + '-' * 20 }
 
 			@connection_parameter = { received: serial_array, port: port, host: host, connect: false, logger: logger, client_id: client_id }
 
@@ -124,8 +123,6 @@ IB::Gateway.new  serial_array: true (, ...)
 			Thread.report_on_exception = true
 			# https://blog.bigbinary.com/2018/04/18/ruby-2-5-enables-thread-report_on_exception-by-default.html
 			Gateway.current = self
-			# establish Alert-framework
-			IB::Alert.logger = logger
 			# initialise Connection without connecting
 			prepare_connection &b
 			# finally connect to the tws
@@ -182,7 +179,6 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 		def connect maximal_count_of_retry=100
 
 			i= -1
-			logger.progname =  'Gateway#connect'
 			begin
 				tws.connect
 			rescue  Errno::ECONNREFUSED => e
@@ -229,7 +225,6 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 
 
 		def reconnect
-			logger.progname = 'Gateway#reconnect'
 			if tws.present?
 				disconnect
 				sleep 1
@@ -239,7 +234,6 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 		end
 
 		def disconnect
-			logger.progname = 'Gateway#disconnect'
 
 			tws.disconnect if tws.present?
 			@accounts = [] # each{|y| y.update_attribute :connected,  false }
@@ -256,7 +250,6 @@ checks the connection before sending a message.
 =end
 
 		def send_message what, *args
-			logger.tap{|l| l.progname =  'Gateway#SendMessage' }
 			begin
 				if	check_connection
 					tws.send_message what, *args
@@ -275,7 +268,6 @@ Argument is either an order-object or a local_id
 
 		def cancel_order *orders
 
-			logger.tap{|l| l.progname =  'Gateway#CancelOrder' }
 
 			orders.compact.each do |o|
 				local_id = if o.is_a? (IB::Order)
@@ -345,7 +337,7 @@ If called without a parameter, all clients are accessed
 
 		def prepare_connection &b
 			tws.disconnect if tws.is_a? IB::Connection
-			self.tws = IB::Connection.new  **@connection_parameter
+      self.tws = IB::Connection.new  **@connection_parameter.merge( logger: self.logger )
 			@accounts = @local_orders = Array.new
 
 			# prepare Advisor-User hierachy
@@ -378,7 +370,6 @@ Its always active.
 			end
 
 			man_id = tws.subscribe( :ManagedAccounts ) do |msg| 
-				logger.progname =  'Gateway#InitializeManagedAccounts' 
 				if @accounts.empty?
 					# just validate the message and put all together into an array
 					@accounts =  msg.accounts_list.split(',').map do |a| 
@@ -396,7 +387,6 @@ Its always active.
 
 			tws.subscribe(  :AccountUpdateTime  ){| msg | logger.debug{ msg.to_human }}
 			tws.subscribe(:Alert) do |msg|
-				logger.progname = 'Gateway#Alerts'
 				logger.debug " ----------------#{msg.code}-----"
 				# delegate anything to IB::Alert
 				IB::Alert.send("alert_#{msg.code}", msg )

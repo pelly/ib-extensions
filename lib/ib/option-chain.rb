@@ -14,38 +14,39 @@ class Contract
   ## parameters
   ### right:: :call, :put, :straddle
   ### ref_price::  :request or a numeric value
-  ### sort:: :strike, :expiry 
+  ### sort:: :strike, :expiry
   ### exchange:: List of Exchanges to be queried (Blank for all available Exchanges)
   def option_chain ref_price: :request, right: :put, sort: :strike, exchange: ''
 
-    ib =  Connection.current
+    ib = Connection.current
+    finalize =  Queue.new
 
     ## Enable Cashing of Definition-Matrix
-    @option_chain_definition ||= [] 
+    @option_chain_definition ||= []
 
-    my_req = nil; finalize= false
+    my_req = nil
 
     # -----------------------------------------------------------------------------------------------------
     # get OptionChainDefinition from IB ( instantiate cashed Hash )
     if @option_chain_definition.blank?
-      sub_sdop = ib.subscribe( :SecurityDefinitionOptionParameterEnd ) { |msg| finalize = true if msg.request_id == my_req }
-      sub_ocd =  ib.subscribe( :OptionChainDefinition ) do | msg |
+      sub_sdop = ib.subscribe( :SecurityDefinitionOptionParameterEnd ) { |msg| finalize.push(true) if msg.request_id == my_req }
+      sub_ocd = ib.subscribe( :OptionChainDefinition ) do | msg |
         if msg.request_id == my_req
-          message =  msg.data
+          message = msg.data
           # transfer the first record to @option_chain_definition
           if @option_chain_definition.blank?
-            @option_chain_definition =  msg.data
-
+            @option_chain_definition = msg.data
           end
           # override @option_chain_definition if a decent combination of attributes is met
           # us- options:  use the smart dataset
-          # other options: prefer options of the default trading class 
-          if message[:exchange] == 'SMART'	
-            @option_chain_definition =  msg.data
-            finalize = true
+          # other options: prefer options of the default trading class
+          if message[:exchange] == 'SMART'
+            @option_chain_definition = msg.data
+            finalize.push(true)
           end
-          if @option_chain_definition.blank? &&  message[:trading_class] == symbol 
-            @option_chain_definition =  msg.data
+          if message[:trading_class] == symbol
+            @option_chain_definition = msg.data
+            finalize.push(true)
           end
         end
       end
@@ -56,7 +57,8 @@ class Contract
         exchange: c.sec_type == :future ? c.exchange : "", # BOX,CBOE',
         sec_type: c[:sec_type]
 
-      i=0; loop { sleep 0.1; break if i> 1000 || finalize; i+=1 } 
+      finalize.pop #  wait until data appeared 
+      #i=0; loop { sleep 0.1; break if i> 1000 || finalize; i+=1 } 
 
       ib.unsubscribe sub_sdop , sub_ocd
     else

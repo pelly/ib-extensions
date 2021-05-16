@@ -65,7 +65,7 @@ module IB
 				#and cancel subscriptions to the message handler
 				# method returns the (running) thread
 				th = Thread.new do
-					finalize, raise_delay_alert = false, false
+ 					finalize, raise_delay_alert = false, false
 					s_id = tws.subscribe(:TickSnapshotEnd){|x| finalize = true if x.ticker_id == the_id }
 
 				e_id = tws.subscribe(:Alert){|x| raise_delay_alert = true if x.code == 354 && x.error_id == the_id } 
@@ -77,7 +77,7 @@ module IB
 						[last,close,bid,ask].each do |x| 
 							tickdata[x] = msg.the_data[:price] if x.include?( IB::TICK_TYPES[ msg.the_data[:tick_type]]) 
 							#  fast exit condition
-							finalize = true if tickdata.size ==4  || ( tickdata[bid].present? && tickdata[ask].present? )  
+							finalize = true if tickdata.size >= 4  || ( tickdata[bid].present? && tickdata[ask].present? )  
 						end if  msg.ticker_id == the_id 
 					end
 					# initialize »the_id« that is used to identify the received tick messages

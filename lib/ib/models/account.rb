@@ -114,7 +114,6 @@ Example
 
 		def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false,  enable_error: false
 			# adjust the orderprice to  min-tick
-			logger.progname =  'Account#PlaceOrder'
 			result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
 			#·IB::Symbols are always qualified. They carry a description-field
       qualified_contract = ->(c) { c.is_a?(IB::Contract) && ( c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) || (c.con_id.to_i <0  && c.sec_type == :bag )) }
@@ -194,7 +193,6 @@ This has to be done manualy in the provided block
 		def modify_order  local_id: nil, order_ref: nil, order:nil
 
 			result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
-			logger.tap{ |l| l.progname = "Account #{account}#modify_order"}
 			order ||= locate_order( local_id: local_id, 
 														 status: /ubmitted/ ,
 														 order_ref: order_ref ) 
