@@ -96,7 +96,7 @@ require 'active_support/core_ext/date/calculations'
 			recieved =  Queue.new
 			r = nil
       # the hole response is transmitted at once!
-			a= tws.subscribe(IB::Messages::Incoming::HistoricalData) do |msg|
+			a = tws.subscribe(IB::Messages::Incoming::HistoricalData) do |msg|
 				if msg.request_id == con_id
 					#					msg.results.each { |entry| puts "  #{entry}" }
 					r = block_given? ?  msg.results.map{|y| yield y} : msg.results
@@ -134,17 +134,14 @@ require 'active_support/core_ext/date/calculations'
 
 			Timeout::timeout(5) do   # max 5 sec.
 				sleep 0.1
-				last_time =  recieved.pop # blocks until a message is ready on the queue
-				loop do
-					sleep 0.1
-          break if recieved.closed? || recieved.empty?  # finish if  data received
-				end
+				recieved.pop # blocks until a message is ready on the queue
+        break if recieved.closed? || recieved.empty?  # finish if  data received
+      end
 			tws.unsubscribe a
 			tws.unsubscribe b
 
 			r  #  the collected result
 
-			end
 		end # def
 	end  # class
 end # module

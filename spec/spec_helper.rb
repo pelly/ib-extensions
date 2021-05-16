@@ -5,6 +5,7 @@ require 'rspec'
 require 'rspec/its'
 require 'rspec/collection_matchers'
 require 'ib-gateway'
+require 'ib/symbols'
 require 'ib/extensions'
 
 require 'pp'

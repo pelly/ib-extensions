@@ -1,7 +1,7 @@
 require 'combo_helper'
 
 RSpec.describe "IB::Calendar" do
-	let ( :the_option ){ IB::Option.new  symbol: :Estx50, strike: 3000, right: :call,  expiry: IB::Symbols::Futures.next_expiry, trading_class: 'OESX' }
+	let ( :the_option ){ IB::Option.new  symbol: :Estx50, strike: 4000, right: :call,  expiry: IB::Symbols::Futures.next_expiry, trading_class: 'OESX' }
   before(:all) do
     establish_connection
 			IB::Connection.current.subscribe( :Alert ){|y|  puts y.to_human }

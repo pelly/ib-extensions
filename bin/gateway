@@ -12,6 +12,7 @@ LogLevel = Logger::DEBUG  ##INFO # DEBUG # ERROR
 #require File.expand_path(File.dirname(__FILE__) + "/../config/boot")
 
 require 'ib-gateway'
+require 'ib/verify'
 require 'ib/market-price'
 require 'ib/option-chain'
 require 'ib/eod'
@@ -81,6 +82,8 @@ read_yml = -> (key) do
 	end
 
 	C =  G.tws
+
+  C.subscribe(:TickGeneric, :TickOption, :TickRequestParameters, :MarketDataType, :TickString, :TickSize  ){|x| x }
   unless  C.received[:OpenOrder].blank?
         puts "------------------------------- OpenOrders ----------------------------------"
     puts C.received[:OpenOrder].to_human.join "\n"
@@ -97,7 +100,7 @@ read_yml = -> (key) do
 
   begin
   IRB.start(__FILE__)
-  rescue  IB::OrderAttributeError => e
-    puts "OrderAtttribute ERROR"
+  #rescue  IB::OrderAttributeError => e
+  #  puts "OrderAtttribute ERROR"
   end
 
