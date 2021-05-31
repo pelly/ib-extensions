@@ -1,5 +1,6 @@
 module IB
 require 'active_support/core_ext/date/calculations'
+require 'csv'
 	module BuisinesDays
 		#		https://stackoverflow.com/questions/4027768/calculate-number-of-business-days-between-two-days
 
@@ -99,7 +100,7 @@ require 'active_support/core_ext/date/calculations'
 			a = tws.subscribe(IB::Messages::Incoming::HistoricalData) do |msg|
 				if msg.request_id == con_id
 					#					msg.results.each { |entry| puts "  #{entry}" }
-					r = block_given? ?  msg.results.map{|y| yield y} : msg.results
+          self.bars = msg.results
 				end
 				recieved.push Time.now
 			end
@@ -132,17 +133,33 @@ require 'active_support/core_ext/date/calculations'
 				:format_date => 2,
 				:keep_up_todate => 0)
 
-			Timeout::timeout(5) do   # max 5 sec.
-				sleep 0.1
-				recieved.pop # blocks until a message is ready on the queue
-        break if recieved.closed? || recieved.empty?  # finish if  data received
-      end
+      recieved.pop # blocks until a message is ready on the queue or the queue is closed
+
 			tws.unsubscribe a
 			tws.unsubscribe b
 
-			r  #  the collected result
+      block_given? ?  bars.map{|y| yield y} : bars  # return bars or result of block
 
 		end # def
+
+    # creates (or overwrites) the specified file (or symbol.csv) and saves bar-data
+    def to_csv file:nil
+      file ||=  "#{symbol}.csv"
+
+      if bars.present?
+        headers = bars.first.invariant_attributes.keys
+        CSV.open( file, 'w' ) {|f| f << headers ; bars.each {|y| f << y.invariant_attributes.values } }
+      end
+    end
+
+    # read csv-data into bars
+    def from_csv file: nil
+      file ||=  "#{symbol}.csv"
+      self.bars = []
+      CSV.foreach( file,  headers: true, header_converters: :symbol) do |row|
+        self.bars << IB::Bar.new( **row.to_h )
+      end
+    end
 	end  # class
 end # module
 
