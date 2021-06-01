@@ -14,31 +14,32 @@ module IB
 # 
 	 def request_greeks delayed:  true, what: :model, thread: false
 
-		 tws=  Connection.current 		 # get the initialized ib-ruby instance
+		 tws = Connection.current 		 # get the initialized ib-ruby instance
 		 # define requested tick-attributes
-		 request_data_type = IB::MARKET_DATA_TYPES.rassoc( delayed ? :frozen_delayed :  :frozen ).first
+		 request_data_type = IB::MARKET_DATA_TYPES.rassoc( delayed ? :frozen_delayed : :frozen ).first
 		 # possible types = 	[ [ :delayed_model_option , :model_option ] , [:delayed_last_option , :last_option ],
 		 # [ :delayed_bid_option , :bid_option ], [ :delayed_ask_option , :ask_option ]	]											  	        
 		 tws.send_message :RequestMarketDataType, :market_data_type =>  request_data_type
 		 tickdata = []
 
 		 self.greek = OptionDetail.new if greek.nil?
-		 greek.updated_at = Time.now
+     greek.updated_at = Time.now
+     queue =  Queue.new
 
 		 #keep the method-call running until the request finished
 		 #and cancel subscriptions to the message handler
 		 # method returns the (running) thread
 		 th = Thread.new do
 			 the_id  =  nil
-			 finalize= false
 			 # subscribe to TickPrices
-			 s_id = tws.subscribe(:TickSnapshotEnd) { |msg|	finalize = true	if msg.ticker_id == the_id }
-			 e_id = tws.subscribe(:Alert){|x|  finalize = true if [200,353].include?( x.code) && x.error_id == the_id } 
+       s_id = tws.subscribe(:TickSnapshotEnd) { |msg|	queue.push(true) 	if msg.ticker_id == the_id  }
+       e_id = tws.subscribe(:Alert){|x| queue.push(false)  if [200,353].include?( x.code) && x.error_id == the_id } 
+       t_id = tws.subscribe( :TickSnapshotEnd, :TickPrice, :TickString, :TickSize, :TickGeneric, :MarketDataType  ) {|msg| msg }
 			 # TWS Error 200: No security definition has been found for the request
 			 # TWS Error 354: Requested market data is not subscribed.
 
 			 sub_id = tws.subscribe(:TickOption ) do |msg| #, :TickSize,  :TickGeneric  do |msg|
-				 if  msg.ticker_id == the_id && tickdata.is_a?(Array) # do nothing if tickdata have already gathered
+				 if  msg.ticker_id == the_id # && tickdata.is_a?(Array) # do nothing if tickdata have already gathered
 					 case msg.type
 					 when /ask/
 						 greek.ask_price = msg.option_price unless msg.option_price.nil?
@@ -55,8 +56,7 @@ module IB
 						 (bf + msg.greeks.keys).each{ |a| greek.send( a.to_s+"=", msg.send( a)) }
 						 tickdata << msg  if [ :all, :model ].include?( what	)
 					 end
-					 tickdata =  tickdata &.first unless [:bidask, :all].include? what
-					 finalize = true if tickdata.is_a?(IB::Messages::Incoming::TickOption) || (tickdata.size == 2 && what== :bidask) || (tickdata.size == 4 && what == :all)
+           queue.push(true) if tickdata.is_a?(IB::Messages::Incoming::TickOption) || (tickdata.size == 2 && what== :bidask) || (tickdata.size == 4 && what == :all)
 				 end
 			 end  # if sub_id
 
@@ -64,25 +64,22 @@ module IB
 			 # by firing the market data request
 			 the_id = tws.send_message :RequestMarketData,  contract: self , snapshot: true 
 
-			 begin
-				 # todo implement config-feature to set timeout in configuration   (DRY-Feature)
-				 Timeout::timeout(5) do   # max 5 sec.
-					 loop{ break if finalize ; sleep 0.05 } 
+       result = queue.pop
 					 # reduce :close_price delayed_close  to close a.s.o 
-					 self.misc =  tickdata if thread  # store internally if in thread modus
-				 end
-			 rescue Timeout::Error
-				 Connection.logger.info{ "#{to_human} --> No Marketdata received " }
-			 end
-			 tws.unsubscribe sub_id, s_id, e_id
+       if result == false
+         Connection.logger.info{ "#{to_human} --> No Marketdata received " } 
+       else
+         self.misc =  tickdata if thread  # store internally if in thread modus
+       end
+
+			 tws.unsubscribe sub_id, s_id, e_id, t_id
 		 end  # thread
 		 if thread
 			 th		# return thread
 		 else
 			 th.join
-			 tickdata	# return 
+       greek
 		 end
-	 end #
-
+   end
  end
 end

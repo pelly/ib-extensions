@@ -34,7 +34,7 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 
 =end
 		def locate_order local_id: nil, perm_id: nil, order_ref: nil, status: /ubmitted/, contract: nil, con_id: nil
-			search_option= [ local_id.present? ? [:local_id , local_id] : nil ,
+			search_option = [ local_id.present? ? [:local_id , local_id] : nil ,
 										perm_id.present? ? [:perm_id, perm_id] : nil,
 										order_ref.present? ? [:order_ref , order_ref ] : nil ].compact.first
 			matched_items = if search_option.nil?
@@ -310,7 +310,7 @@ This has to be done manualy in the provided block
 	end # class
 		##
 		# in the console   (call gateway with watchlist: [:Spreads, :BuyAndHold])
-#head :001 > .active_accounts.first.focuses.to_a.to_human
+#head :001 > .clients.first.focuses.to_a.to_human
 #Unspecified
 #<Stock: BLUE EUR SBF>
 #<PortfolioValue: DU167348 Pos=720 @ 15.88;Value=11433.24;PNL=-4870.05 unrealized;<Stock: BLUE EUR SBF>
