@@ -163,31 +163,6 @@ class Contract
   end
 
 
-  def associate_ticdata
-
-    tws=  IB::Connection.current 		 # get the initialized ib-ruby instance
-    the_id =  nil
-    q =  Queue.new
-    #  switch to delayed data
-    tws.send_message :RequestMarketDataType, :market_data_type => :delayed
-
-    a_id = ib.subscribe(:Alert ){ |msg | q.close if msg.code == 200 && msg.error_id == the_id }
-    s_id = tws.subscribe(:TickSnapshotEnd) { |msg|	q.push( true )	if msg.ticker_id == the_id }
-
-    sub_id = tws.subscribe(:TickPrice, :TickSize,  :TickGeneric, :TickOption) do |msg|
-      self.bars << msg.the_data if msg.ticker_id == the_id
-    end
-
-    # initialize »the_id« that is used to identify the received tick messages
-    # by firing the market data request
-    the_id = tws.send_message :RequestMarketData,  contract: self , snapshot: true 
-
-    q.pop
-
-    tws.unsubscribe sub_id
-    tws.unsubscribe s_id
-    tws.unsubscribe a_id
-  end # def 
 end # class
 
 

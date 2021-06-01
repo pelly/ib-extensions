@@ -65,7 +65,6 @@ module IB
 			 the_id = tws.send_message :RequestMarketData,  contract: self , snapshot: true 
 
        result = queue.pop
-       t = Thread.new{ sleep 3; tws.unsubscribe t_id }
 					 # reduce :close_price delayed_close  to close a.s.o 
        if result == false
          Connection.logger.info{ "#{to_human} --> No Marketdata received " } 
@@ -73,13 +72,13 @@ module IB
          self.misc =  tickdata if thread  # store internally if in thread modus
        end
 
-			 tws.unsubscribe sub_id, s_id, e_id
+			 tws.unsubscribe sub_id, s_id, e_id, t_id
 		 end  # thread
 		 if thread
 			 th		# return thread
 		 else
 			 th.join
-       tickdata &.first.the_data 	# return 
+       greek
 		 end
    end
  end
