@@ -54,18 +54,30 @@ require 'csv'
 	class Contract
 		# Receive EOD-Data
 		#
-		# The Enddate has to be specified (as Date Object), t
+		# The Enddate has to be specified (as Date Object), `:to`
 		#
 		# The Duration can either be specified as Sting " yx D" or as Integer.
-		# Altenative a start date can be specified with the :start parameter.
+    #
+		# Alternatively a start date can be specified with the `:start` parameter.
 		#
-		# The parameter :what specified the kind of received data:
+		# The parameter `:what` specifies the kind of received data.
+    #
 		#  Valid values:
 		#   :trades, :midpoint, :bid, :ask, :bid_ask,
 		#   :historical_volatility, :option_implied_volatility,
 		#   :option_volume, :option_open_interest
 		#
-		# The results can be preprocessed through a block, thus
+    # Error-handling
+    # --------------
+    # * Basically all Errors simply lead to log-entries:
+    # * the contract is not valid, 
+    # * no market data subscriptions 
+    # * other servers-side errors
+    # 
+    # If the duration is longer then the maximum range, the response is
+    # cut to the maximum allowed range. 
+    #
+		# The results are stored in `:bars` and can be preprocessed through a block, thus
 		#
 		# puts IB::Symbols::Index::stoxx.eod( duration: '10 d')){|r| r.to_human}
 		#   <Bar: 2019-04-01 wap 0.0 OHLC 3353.67 3390.98 3353.67 3385.38 trades 1750 vol 0>
@@ -79,7 +91,7 @@ require 'csv'
 		#   <Bar: 2019-04-11 wap 0.0 OHLC 3430.73 3442.25 3412.15 3435.34 trades 1773 vol 0>
 		#   <Bar: 2019-04-12 wap 0.0 OHLC 3432.16 3454.77 3425.84 3447.83 trades 1715 vol 0>
 		#
-		# «to_human« is not needed here because ist aliased with `to_s`
+		# «to_human« is not needed here because its aliased with `to_s`
 		#
 		# puts Symbols::Stocks.wfc.eod(  start: Date.new(2019,10,9), duration: 3 )
 		#		<Bar: 2020-10-23 wap 23.3675 OHLC 23.55 23.55 23.12 23.28 trades 5778 vol 50096>
@@ -100,13 +112,13 @@ require 'csv'
 			a = tws.subscribe(IB::Messages::Incoming::HistoricalData) do |msg|
 				if msg.request_id == con_id
 					#					msg.results.each { |entry| puts "  #{entry}" }
-          self.bars = msg.results
+          self.bars = msg.results   #todo: put result in dataframe
 				end
 				recieved.push Time.now
 			end
 			b = tws.subscribe( IB::Messages::Incoming::Alert) do  |msg|
 				if [321,162,200].include? msg.code
-					tws.logger.info msg.message
+					tws.logger.error msg.message
 					# TWS Error 200: No security definition has been found for the request
 					# TWS Error 354: Requested market data is not subscribed.
 				  # TWS Error 162  # Historical Market Data Service error
