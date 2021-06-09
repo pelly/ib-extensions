@@ -2,4 +2,8 @@ require  'ib-api'
 require  'ib/verify'
 require  'ib/spread-prototypes'
 require  'ib/order-prototypes'
+require "ib/eod"
+require "ib/market-price"
+require "ib/option-chain"
+require "ib/option-greeks"
 require  'ib/gateway'
