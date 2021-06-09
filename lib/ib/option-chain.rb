@@ -1,9 +1,6 @@
 require 'ib/verify'
 require 'ib/market-price'
 module IB
-# define a custom ErrorClass which can be fired if a verification fails
-class VerifyError < StandardError
-end
 
 class Contract 
 
@@ -22,6 +19,8 @@ class Contract
   def option_chain ref_price: :request, right: :put, sort: :strike, exchange: '', trading_class: nil
 
     ib = Connection.current
+
+    # binary interthread communication
     finalize = Queue.new
 
     ## Enable Cashing of Definition-Matrix
@@ -61,7 +60,6 @@ class Contract
         sec_type: c[:sec_type]
 
       finalize.pop #  wait until data appeared 
-      #i=0; loop { sleep 0.1; break if i> 1000 || finalize; i+=1 } 
 
       ib.unsubscribe sub_sdop, sub_ocd
     else
@@ -131,8 +129,8 @@ class Contract
   end  # def
 
   # return a set of AtTheMoneyOptions
-  def atm_options ref_price: :request, right: :put
-    option_chain(  right: right, ref_price: ref_price, sort: :expiry) do | chain |
+  def atm_options ref_price: :request, right: :put, **params
+    option_chain(  right: right, ref_price: ref_price, sort: :expiry, **params) do | chain |
       chain[0]
     end
 

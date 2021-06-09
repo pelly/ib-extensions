@@ -49,8 +49,11 @@ module IB
     #    IB::Symbols::W500.map{|c|  c.verify(thread: true){ |vc| do_something }}.join
 
     def verify thread: nil, &b
-      return [self] if contract_detail.present? || sec_type == :bag
-      _verify update: false, thread: thread,  &b  # returns the allocated threads
+      if thread
+        Thread.new { _verify  &b }
+      else
+      _verify   &b
+      end
     end # def
 
     # returns a hash
@@ -70,8 +73,9 @@ module IB
     def verify!
       c =  0
       IB::Connection.logger.warn "Contract.verify! is depreciated. Use \"contract =  contract.verify.first\" instead"
-      _verify( update: true){| response | c+=1 } # wait for the returned thread to finish
-      IB::Connection.logger.error { "Multible Contracts detected during verify!."  } if c > 1
+      c= verify.first
+      self.attributes = c.invariant_attributes
+      self.contract_detail = c.contract_detail
       self
     end
 
@@ -88,19 +92,20 @@ module IB
     # if :update is true, the attributes of the Contract itself are adapted
     #
     # otherwise the Contract is untouched
-    def _verify thread: nil , update:,  &b # :nodoc:
+    def _verify  &b # :nodoc:
       ib = Connection.current
+      error "No Connection"  unless ib.is_a? IB::Connection
       # we generate a Request-Message-ID on the fly
       message_id = nil
       # define local vars which are updated within the query-block
-      recieved_contracts = []
+      received_contracts = []
       queue = Queue.new
       a = nil
 
       # a tws-request is suppressed for bags and if the contract_detail-record is present
-      tws_request_not_nessesary = bag? || contract_detail.is_a?( ContractDetail )
+      tws_request_not_necessary = bag? || contract_detail.is_a?( ContractDetail )
 
-      if tws_request_not_nessesary
+      if tws_request_not_necessary
         yield self if block_given?
         return self
       else # subscribe to ib-messages and describe what to do
@@ -116,19 +121,15 @@ module IB
               # if multiple contracts are present, all of them are assigned
               # Only the last contract is saved in self;  'count' is incremented
               ## a specified block gets the contract_object on any unique ContractData-Event
-              recieved_contracts << if block_given?
-                                      yield msg.contract
-              else
-                msg.contract
-              end
-              if update
-                self.attributes = msg.contract.attributes
-                self.contract_detail = msg.contract_detail unless msg.contract_detail.nil?
-              end
+              c = if block_given?
+                           yield msg.contract
+                     else
+                           msg.contract
+                   end
+              queue.push c unless c.nil?
             end
           when Messages::Incoming::ContractDataEnd
-            queue.push(1) if  msg.request_id.to_i == message_id
-
+            queue.close if  msg.request_id.to_i == message_id
           end  # case
         end # subscribe
 
@@ -138,19 +139,12 @@ module IB
         #	if contract_to_be_queried.present?   # is nil if query_contract fails
         message_id = ib.send_message :RequestContractData, :contract => query_contract
 
-        th =  Thread.new do
-          queue.pop
-#          j=0; loop{ sleep(0.01);  j+=1; break if queue.closed? || queue.pop || j> 100; }
-#          ib.logger.error{ "#{to_human} --> No ContractData recieved " } if j >= 100 && !queue.closed?
-          ib.unsubscribe a
+        while r = queue.pop  
+          received_contracts << r
         end
-        if thread.nil?
-          th.join    # wait for the thread to finish
-          recieved_contracts			 # return queue of contracts
-        else
-          th			# return active thread
-        end
+        ib.unsubscribe a
       end
+      received_contracts	 # return contracts	
     end
 
     # Generates an IB::Contract with the required attributes to retrieve a unique contract from the TWS
