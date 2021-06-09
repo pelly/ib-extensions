@@ -94,11 +94,15 @@ Everything is carried out in a mutex-synchonized environment
 
   def request_open_orders
 
-    exit_condition = false
-    subscription = tws.subscribe( :OpenOrderEnd ) { exit_condition = true }
+    q =  Queue.new
+    subscription = tws.subscribe( :OpenOrderEnd ) { q.close }
     account_data{| account | account.orders = [] }
     send_message :RequestAllOpenOrders
-    i=0; loop{ i+=1; sleep 0.01;  break if i > 1000 || exit_condition }
+    ## the OpenOrderEnd-message usually appears after 0.1 sec.
+    ## we wait for 0.5 sec. 
+    th =  Thread.new{  (1 .. 50).each{ break if q.closed?; sleep 0.01 };   q.close  }
+
+    q.pop # wait for OpenOrderEnd or finishing of thread
     tws.unsubscribe subscription
   end
 
