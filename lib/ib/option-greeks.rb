@@ -24,6 +24,7 @@ module IB
 
 		 self.greek = OptionDetail.new if greek.nil?
      greek.updated_at = Time.now
+     greek.option = self
      queue =  Queue.new
 
 		 #keep the method-call running until the request finished
