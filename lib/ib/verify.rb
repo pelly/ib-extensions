@@ -57,7 +57,7 @@ module IB
     end # def
 
     # returns a hash
-    def nessesary_attributes
+    def necessary_attributes
 
       v= { stock:  { currency: 'USD', exchange: 'SMART', symbol: nil},
            option: { currency: 'USD', exchange: 'SMART', right: 'P', expiry: nil, strike: nil, symbol:  nil},
@@ -183,7 +183,7 @@ module IB
         #			Contract.build  item_attributehash[necessary_items].merge(:sec_type=> sec_type)  # return this
         Contract.build  self.invariant_attributes # return this
       else   # its always possible, to retrieve a Contract if con_id and exchange  or are present
-        Contract.new  con_id: con_id , :exchange => exchange.presence || item_attributehash[nessesary_attributes][:exchange].presence || 'SMART'				# return this
+        Contract.new  con_id: con_id , :exchange => exchange.presence || item_attributehash[necessary_attributes][:exchange].presence || 'SMART'				# return this
       end  # if
     end # def
   end
