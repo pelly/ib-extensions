@@ -45,20 +45,22 @@ raises an IB::Error if less then 100 items are recieved-
 			# don't repeat the query until 170 sec. have passed since the previous update
 			if account.last_updated.nil?  || ( Time.now - account.last_updated ) > 170 # sec   
 				logger.debug{ "#{account.account} :: Requesting AccountData " }
-				account.update_attribute :connected, false  # indicates: AccountUpdate in Progress
+        q =  Queue.new
+        download_end = tws.subscribe( :AccountDownloadEnd )  do | msg |
+          q.push true if msg.account_name == account.account
+        end
 				# reset account and portfolio-values
 				account.portfolio_values =  []
 				account.account_values =  []
 				send_message :RequestAccountData, subscribe: true, account_code: account.account
-				Timeout::timeout(3, IB::TransmissionError, "RequestAccountData failed (#{account.account})") do
-#					 initialize requests sequencially					
-					loop{ sleep 0.1; break if account.connected  }
-				end
+
+        q.pop
 				if watchlists.present?
 					watchlists.each{|w| error "Watchlists must be IB::Symbols--Classes :.#{w.inspect}" unless w.is_a? IB::Symbols }
 					account.organize_portfolio_positions watchlists  
 				end
 				send_message :RequestAccountData, subscribe: false  ## do this only once
+        tws.unsubscribe download_end
 			else
 				logger.info{ "#{account.account} :: Using stored AccountData " }
 			end
