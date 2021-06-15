@@ -407,25 +407,28 @@ Its always active.
 		#   => 0.00066005
 		#
 		def check_connection
-			answer = nil; count=0
-			z= tws.subscribe( :CurrentTime ) { answer = true }
-			while (answer.nil?)
+      q =  Queue.new 
+      count = 0
+      result = nil
+      z= tws.subscribe( :CurrentTime ) { q.push true }
+			loop do
 				begin
 					tws.send_message(:RequestCurrentTime)												# 10 ms  ##
-					i=0; loop{ break if answer || i > 40; i+=1; sleep 0.0001}
+          th = Thread.new{ sleep 1 ; q.push nil }
+          result =  q.pop 
+          count+=1
+          break if result || count > 10
 				rescue IOError, Errno::ECONNREFUSED   # connection lost
-					count = 6
+					count +=1 
+          retry
 				rescue IB::Error # not connected
 					reconnect 
-					count +=1
-					sleep 1
-					retry if count <= 5
+					count = 0
+					retry
 				end
-				count +=1
-				break if count > 5
 			end
 			tws.unsubscribe z
-			count < 5  && answer #  return value
+			result #  return value
 		end
 	private
 
