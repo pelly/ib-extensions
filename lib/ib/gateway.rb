@@ -196,28 +196,21 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 					return false
 				end
 			rescue Errno::EHOSTUNREACH => e
-				logger.error 'Cannot connect to specified host'
-				logger.error  e
+				error "Cannot connect to specified host  #{e}", :reader, true
 				return false
 			rescue SocketError => e
-				logger.error 'Wrong Adress, connection not possible'
+				error 'Wrong Adress, connection not possible', :reader, true
 				return false
+      rescue IB::Error => e
+        logger.info e
 			end
 
-			tws.start_reader
-			# let NextValidId-Event appear
-			(1..30).each do |r|
-				break if tws.next_local_id.present?
-				sleep 0.1
-				if r == 30
-					error "Connected, NextLocalId is not initialized. Repeat with another client_id"
-				end
-			end
 			# initialize @accounts (incl. aliases)
 			tws.send_message( :RequestFA, fa_data_type: 3) if fa?
 			logger.debug { "Communications successfully established" }
       # update open orders
       request_open_orders if @gateway_parameter[:s_o_m] || @gateway_parameter[:g_a_d]
+      true #  return gatway object
 		end	# def
 
 
@@ -227,7 +220,7 @@ Weiterhin meldet sich die Anwendung zur Auswertung von Messages der TWS an.
 		def reconnect
 			if tws.present?
 				disconnect
-				sleep 1
+        sleep 0.1
 			end
 			logger.info "trying to reconnect ..."
 			connect
