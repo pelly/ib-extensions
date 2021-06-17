@@ -79,7 +79,7 @@ s = IB::Strangle.build from: IB::Symbols::Index.stoxx,
                             expiry: 202103 
 
 ```
-and use the speads like any other contract. ([documentation](https://ib-ruby.github.io/ib-doc/spreads.html)
+and use the speads like any other contract. ([documentation](https://ib-ruby.github.io/ib-doc/spreads.html))
 
 ## Gateway 
 ```
@@ -91,7 +91,8 @@ Details in the [documentation](https://ib-ruby.github.io/ib-doc/gateway.html)
 Its used in [Simple Monitor](https://github.com/ib-ruby/simple-monitor)
 
 
-
+## Notebooks
+**`IB-Ruby`** code can be executed in [iruby jupyter notebooks](https://github.com/SciRuby/iruby). A few scripts are included in [IB-Examples](https://github.com/ib-ruby/ib-examples). (*.ipynb- files)
 
 
 ## Contributing
