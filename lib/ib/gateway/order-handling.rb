@@ -100,20 +100,21 @@ Everything is carried out in a mutex-synchonized environment
     send_message :RequestAllOpenOrders
     ## the OpenOrderEnd-message usually appears after 0.1 sec.
     ## we wait for 0.5 sec. 
-    th =  Thread.new{   sleep 5 ; q.close  }
+    th =  Thread.new{   sleep 0.5 ; q.close  }
 
     q.pop # wait for OpenOrderEnd or finishing of thread
 
+    tws.unsubscribe subscription
     if q.closed?    
-      logger.fatal{ "#+{account.to_human} No Open Order Message received!" }
-      account.orders = []  # reset order array
+      logger.fatal{ "No Open Order Messages received!" }
+      account_data {| account | account.orders = [] } # reset order array
     else
       Thread.kill(th)
+      account_data {| account | account.orders } # reset order array
     end
-    tws.unsubscribe subscription
   end
 
-  alias update_orders request_open_orders 
+  alias update_orders request_open_orders
 
 
 

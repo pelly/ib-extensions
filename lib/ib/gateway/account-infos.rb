@@ -54,7 +54,11 @@ raises an IB::Error if less then 100 items are recieved-
 				account.account_values =  []
 				send_message :RequestAccountData, subscribe: true, account_code: account.account
 
+        th =  Thread.new{   sleep 0.5 ; q.close  }
         q.pop
+
+        error "No AccountData received", :reader  if q.closed?
+
 				if watchlists.present?
 					watchlists.each{|w| error "Watchlists must be IB::Symbols--Classes :.#{w.inspect}" unless w.is_a? IB::Symbols }
 					account.organize_portfolio_positions watchlists  

@@ -84,16 +84,16 @@ module IB
        while !q.closed? do
          result = q.pop
          if result.is_a? IB::Messages::Incoming::Alert
-           tws.logger.info result.message
+           tws.logger.debug result.message
            case result.code
-           when 200 
+           when 200
              q.close
              error "#{to_human} --> #{result.message}"   unless no_error
            when 354, #   not subscribed to market data
              10167,
              10168
              if delayed && !(result.message =~ /market data is not available/)
-               tws.logger.info  "#{to_human} --> requesting delayed data" 
+               tws.logger.debug  "#{to_human} --> requesting delayed data" 
                tws.send_message :RequestMarketDataType, :market_data_type => 3 
                self.misc = :delayed
                sleep 0.1
