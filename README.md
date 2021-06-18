@@ -95,6 +95,26 @@ Its used in [Simple Monitor](https://github.com/ib-ruby/simple-monitor)
 **`IB-Ruby`** code can be executed in [iruby jupyter notebooks](https://github.com/SciRuby/iruby). A few scripts are included in [IB-Examples](https://github.com/ib-ruby/ib-examples). (*.ipynb- files)
 
 
+## as-table
+`puts IB::Model.as_table` provides a modern and convient output for the console and notebooks.
+
+```ruby
+G = Gateway.new
+G.update_orders
+puts G.clients.first.orders.as_table
+┌──────────┬───────────┬─────────────────────────────────────────┬──────┬─────┬────────┬────────┬───────┬────────┐
+│ account  │ status    │                                         │ Type │ tif │ action │ amount │ price │ id/fee │
+╞══════════╪═══════════╪═════════════════════════════════════════╪══════╪═════╪════════╪════════╪═══════╪════════╡
+│ U123456  │ Submitted │ Option: SLV 20210716 put 24.0 SMART USD │ LMT  │ GTC │ sell   │ 5.0    │ 0.98  │ 0      │
+└──────────┴───────────┴─────────────────────────────────────────┴──────┴─────┴────────┴────────┴───────┴────────┘
+puts G.clients.first.orders.contract.as_table
+┌────────┬────────┬───────────┬──────────┬──────────┬────────────┬───────────────┬───────┬────────┬──────────┐
+│        │ symbol │ con_id    │ exchange │ expiry   │ multiplier │ trading-class │ right │ strike │ currency │
+╞════════╪════════╪═══════════╪══════════╪══════════╪════════════╪═══════════════╪═══════╪════════╪══════════╡
+│ Option │ SLV    │ 456347029 │  SMART   │ 20210716 │    100     │      SLV      │  put  │   24.0 │   USD    │
+└────────┴────────┴───────────┴──────────┴──────────┴────────────┴───────────────┴───────┴────────┴──────────┘
+
+```
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/ib-ruby/ib-extensions. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[ib-ruby/ib-extensions/blob/master/CODE_OF_CONDUCT.md).
