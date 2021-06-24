@@ -107,7 +107,7 @@ module IB
 
       if tws_request_not_necessary
         yield self if block_given?
-        return self
+        return [self]    # return an array!
       else # subscribe to ib-messages and describe what to do
         a = ib.subscribe(:Alert, :ContractData,  :ContractDataEnd) do |msg|
           case msg
