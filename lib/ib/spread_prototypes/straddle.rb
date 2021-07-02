@@ -43,11 +43,11 @@ module IB
 						leg_prototype  = IB::Option.new from.attributes
 						.slice( :currency, :symbol, :exchange)
 						.merge(defaults)
-						.merge( fields )
+              .merge( fields )
 
 						leg_prototype.sec_type = 'FOP' if from.is_a?(IB::Future)
-						the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :put )
-						the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :call )
+            the_spread.add_leg IB::Option.new( leg_prototype.attributes.merge( right: :put )).verify.first
+            the_spread.add_leg IB::Option.new( leg_prototype.attributes.merge( right: :call )).verify.first
 						error "Initialisation of Legs failed" if the_spread.legs.size != 2
 						the_spread.description =  the_description( the_spread )
 					end
