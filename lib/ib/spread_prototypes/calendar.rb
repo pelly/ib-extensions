@@ -16,16 +16,13 @@ module IB
 			def fabricate master, the_other_expiry
 
 				error "Argument must be a IB::Future or IB::Option" unless  [:option, :future_option, :future ].include? master.sec_type
-
-				initialize_spread( master ) do | the_spread |
-					the_spread.add_leg master, action: :buy
-					
-					the_other_expiry =  the_other_expiry.values.first if the_other_expiry.is_a?(Hash)
-					back = the_spread.transform_distance master.expiry, the_other_expiry
-					the_spread.add_leg master.merge(expiry: back ), action: :sell
-					error "Initialisation of Legs failed" if the_spread.legs.size != 2
-					the_spread.description =  the_description( the_spread )
-				end
+        m = master.verify.first
+        the_other_expiry =  the_other_expiry.values.first if the_other_expiry.is_a?(Hash)
+        back = IB::Spread.transform_distance m.expiry, the_other_expiry
+        calendar =  m.roll expiry: back
+        error "Initialisation of Legs failed" if calendar.legs.size != 2
+				calendar.description =  the_description( calendar )
+        calendar  #  return fabricated spread
 			end
 
 
@@ -46,25 +43,30 @@ module IB
 											 fields[:expiry] = from.expiry unless fields.key?(:expiry)
 											 fields[:trading_class] = from.trading_class unless fields.key?(:trading_class) || from.trading_class.empty?
 											 fields[:multiplier] = from.multiplier unless fields.key?(:multiplier) || from.multiplier.to_i.zero?
-											 details =  nil; from.verify{|c| details = c.contract_detail }
+                       details = from.verify.first.contract_detail 
 											 IB::Contract.new( con_id: details.under_con_id, 
-																				currency: from.currency)
-																			 .verify!
-																			 .essential
+																				currency: from.currency).verify.first.essential
 										 else
 											 from
 										 end
 				kind = { :front => fields.delete(:front), :back => fields.delete(:back) }
-				error "Specifiaction of :front and :back expiries nessesary, got: #{kind.inspect}" if kind.values.any?(nil)
+				error "Specifiaction of :front and :back expiries necessary, got: #{kind.inspect}" if kind.values.any?(nil)
 				initialize_spread( underlying ) do | the_spread |
-					leg_prototype  = IB::Option.new underlying.attributes
-															.slice( :currency, :symbol, :exchange)
-															.merge(defaults)
-															.merge( fields )
-					kind[:back] = the_spread.transform_distance kind[:front], kind[:back]
+          leg_prototype  = IB::Option.new underlying.attributes
+            .slice( :currency, :symbol, :exchange)
+            .merge(defaults)
+            .merge( fields )
+					kind[:back] = IB::Spread.transform_distance kind[:front], kind[:back]
 					leg_prototype.sec_type = 'FOP' if underlying.is_a?(IB::Future)
-					the_spread.add_leg IB::Contract.build( leg_prototype.attributes.merge(expiry: kind[:front] )), action: :buy
-					the_spread.add_leg IB::Contract.build( leg_prototype.attributes.merge(expiry: kind[:back])), action: :sell
+          leg1 =  leg_prototype.merge(expiry: kind[:front] ).verify.first
+          leg2 = leg_prototype.merge(expiry: kind[:back] ).verify.first
+          unless leg2.is_a? IB::Option
+            leg2_trading_class = ''
+            leg2 = leg_prototype.merge(expiry: kind[:back] ).verify.first
+
+          end
+          the_spread.add_leg leg1 , action: :buy
+          the_spread.add_leg leg2 , action: :sell
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end
@@ -78,7 +80,8 @@ module IB
 
 			def the_description spread
 			x= [ spread.combo_legs.map(&:weight) , spread.legs.map( &:last_trading_day )].transpose
-			 "<Calendar #{spread.symbol} #{spread.legs.first.right}(#{spread.legs.first.strike})[#{x.map{|w,l_t_d| "#{w} :#{Date.parse(l_t_d).strftime("%b %Y")} "}.join( '|+|' )} >"
+      "z"
+			# "<Calendar #{spread.symbol} #{spread.legs.first.right}(#{spread.legs.first.strike})[#{x.map{|w,l_t_d| "#{w} :#{Date.parse(l_t_d).strftime("%b %Y")} "}.join( '|+|' )} >"
 			end
 		 end # class
     end	# module vertical

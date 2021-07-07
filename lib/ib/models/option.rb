@@ -1,20 +1,26 @@
 module IB
   class Option
-    def roll expiry, strike
-      if strike.to_i > 2000
-        expiry, strike =  strike, expiry  # exchange values if input occurs in wrong direction
-      end
-      new_option =  Option.new( invariant_attributes.merge( con_id: nil, trading_class: '', last_trading_day: nil,
-                                                            local_symbol: "",
-                                                            expiry: expiry,  strike: strike ))
-      n_o = new_option.verify.first   # get con_id
+    # helper method to roll an existing option
+    #
+    # Arguments are strike and expiry of the target-option.
+    #
+    # Example:  ge= Symbols::Options.ge.verify.first.roll( strike: 13 )  
+    #           ge.to_human
+    #  => " added <Option: GE 20210917 call 7.0 SMART USD> added <Option: GE 20210917 call 13.0 SMART USD>" 
+# 
+    #   rolls the Option to another strike
 
+    def roll **args
+      error "specify strike and expiry to roll option" if args.empty?
+      args[:expiry]= IB::Spread.transform_distance( expiry, args.delete(:to  )) if args[:to].present?
+      
+      new_option =  merge( **args ).verify.first
+      myself =  con_id.to_i.zero? ? self.verify.first  : self
+      error "Cannot roll option; target is no IB::Contract" unless new_option.is_a? IB::Option
+      error "Cannot roll option; Option vannot be verified" unless myself.is_a? IB::Option
       target = IB::Spread.new exchange: exchange, symbol: symbol, currency: currency
-      target.add_leg self, action:  :buy
-      target.add_leg n_o, action: :sell
-    rescue NoMethodError
-      Connection.logger.error "Rolling not possible. #{new_option.to_human} could not be verified"
-      nil
+      target.add_leg myself, action:  :buy
+      target.add_leg new_option, action: :sell
     end
   end
 end

@@ -24,6 +24,7 @@ module IB
 
 		def initialize_spread ref_contract = nil, **attributes
 			error "Initializing of Spread failed – contract is missing" unless ref_contract.is_a?(IB::Contract)
+      # make sure that :exchange, :symbol and :currency are present
 			the_contract =  ref_contract.merge( **attributes ).verify.first
 			error "Underlying for Spread is not valid: #{ref_contract.to_human}" if the_contract.nil?
 			the_spread= IB::Spread.new  the_contract.attributes.slice( :exchange, :symbol, :currency )

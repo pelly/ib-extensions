@@ -22,7 +22,7 @@ RSpec.describe "IB::Calendar" do
 
 	context "initialize with underlying" , focus: true do
 		subject{ IB::Calendar.build( from: IB::Symbols::Index.stoxx, 
-																 strike: 3000, 
+																 strike: 4000, 
 																 right: :put,
 																 trading_class: 'OESX',
 																 front:  IB::Symbols::Futures.next_expiry , 

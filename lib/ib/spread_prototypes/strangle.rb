@@ -60,15 +60,14 @@ module IB
 										 end
 				kind = { :p => fields.delete(:p), :c => fields.delete(:c) }
 				initialize_spread( underlying ) do | the_spread |
-					leg_prototype  = IB::Option.new underlying.attributes
-															.slice( :currency, :symbol, :exchange)
-															.merge(defaults)
-															.merge( fields )
-															.merge( local_symbol: "" )
+          leg_prototype  = IB::Option.new from.attributes
+            .slice( :currency, :symbol, :exchange)
+            .merge(defaults)
+            .merge( fields )
 															
-					leg_prototype.sec_type = 'FOP' if underlying.is_a?(IB::Future)
-					the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :put, strike: kind[:p] )
-					the_spread.add_leg IB::Contract.build leg_prototype.attributes.merge( right: :call, strike: kind[:c] )
+          leg_prototype.sec_type = 'FOP' if underlying.is_a?(IB::Future)
+          the_spread.add_leg leg_prototype.merge( right: :put, strike: kind[:p] ).verify.first
+          the_spread.add_leg leg_prototype.merge( right: :call, strike: kind[:c] ).verify.first
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end
@@ -88,7 +87,7 @@ module IB
 
 
 			def the_description spread
-			 "<Strangle #{spread.symbol}(#{spread.legs.map(&:strike).join(",")})[#{Date.parse(spread.legs.first.last_trading_day).strftime("%b %Y")}]>"
+        "<Strangle #{spread.symbol}(#{spread.legs.map(&:strike).join(",")})[#{Date.parse(spread.legs.first.last_trading_day).strftime("%b %Y")}]>"
 			end
 
       end # class

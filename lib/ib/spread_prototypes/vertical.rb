@@ -20,8 +20,8 @@ module IB
 				buy =  master.strike if buy.zero? 
 				sell =  master.strike if sell.zero? 
 				initialize_spread( master ) do | the_spread |
-					the_spread.add_leg master.essential.merge(strike: sell, local_symbol: "", con_id: 0), action: :sell
-					the_spread.add_leg master.essential.merge(strike: buy, local_symbol: "", con_id: 0), action: :buy
+          the_spread.add_leg master.merge(strike: sell).verify.first, action: :sell
+          the_spread.add_leg master.merge(strike: buy).verify.first, action: :buy
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end
@@ -56,14 +56,13 @@ module IB
 				kind = { :buy => fields.delete(:buy), :sell => fields.delete(:sell) }
 				error "Specifiaction of :buy and :sell nessesary, got: #{kind.inspect}" if kind.values.any?(nil)
 				initialize_spread( underlying ) do | the_spread |
-					leg_prototype  = IB::Option.new underlying.attributes
+					leg_prototype  = Option.new underlying.attributes
 															.slice( :currency, :symbol, :exchange)
 															.merge(defaults)
 															.merge( fields )
-															.merge( local_symbol: "" )
 					leg_prototype.sec_type = 'FOP' if underlying.is_a?(IB::Future)
-					the_spread.add_leg  leg_prototype.merge(strike: kind[:sell]), action: :sell
-					the_spread.add_leg  leg_prototype.merge(strike: kind[:buy] ), action: :buy
+          the_spread.add_leg  leg_prototype.merge(strike: kind[:sell]).verify.first, action: :sell
+          the_spread.add_leg  leg_prototype.merge(strike: kind[:buy] ).verify.first, action: :buy
 					error "Initialisation of Legs failed" if the_spread.legs.size != 2
 					the_spread.description =  the_description( the_spread )
 				end

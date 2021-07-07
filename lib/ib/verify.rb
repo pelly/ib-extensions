@@ -1,6 +1,8 @@
 module IB
 	# define a custom ErrorClass which can be fired if a verification fails
-#	class VerifyError < StandardError
+	class VerifyError < StandardError
+
+  end
 #	end
 
   class Contract
@@ -96,11 +98,12 @@ module IB
       ib = Connection.current
       error "No Connection"  unless ib.is_a? IB::Connection
       # we generate a Request-Message-ID on the fly
-      message_id = nil
+      error "Either con_id or sec_type have to be set", :verify if con_id.to_i.zero?  && sec_type.blank?
       # define local vars which are updated within the query-block
       received_contracts = []
       queue = Queue.new
       a = nil
+      message_id = nil
 
       # a tws-request is suppressed for bags and if the contract_detail-record is present
       tws_request_not_necessary = bag? || contract_detail.is_a?( ContractDetail )
@@ -112,15 +115,14 @@ module IB
         a = ib.subscribe(:Alert, :ContractData,  :ContractDataEnd) do |msg|
           case msg
           when Messages::Incoming::Alert
+            ## do not throw an error here, asynchronous operation!
+            ## just notice failure in log and return nil instead of contract-object
             if msg.code == 200 && msg.error_id == message_id
               ib.logger.error { "Not a valid Contract :: #{self.to_human} " }
               queue.close
             end
           when Messages::Incoming::ContractData
             if msg.request_id.to_i == message_id
-              # if multiple contracts are present, all of them are assigned
-              # Only the last contract is saved in self;  'count' is incremented
-              ## a specified block gets the contract_object on any unique ContractData-Event
               c = if block_given?
                            yield msg.contract
                      else

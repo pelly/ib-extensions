@@ -1,6 +1,6 @@
 require 'combo_helper'
-STRIKE_ESTX =  3300   # fill in an appropiate strike for eurostoxx 
-STRIKE_WFC =  25      # same for Wells Fargo
+STRIKE_ESTX =  4100   # fill in an appropiate strike for eurostoxx 
+STRIKE_WFC =  40      # same for Wells Fargo
 RSpec.describe "IB::Straddle" do
 	let ( :the_option ){ IB::Option.new  symbol: :Estx50, right: :put, strike: STRIKE_ESTX, expiry: IB::Symbols::Futures.next_expiry }
 	let ( :the_bag ){ IB::Symbols::Combo::stoxx_straddle }
@@ -22,7 +22,7 @@ RSpec.describe "IB::Straddle" do
 			
 	end
 
-	context "build with index underlying" do
+	context "build with index underlying" , focus: true do
 		subject{ IB::Straddle.build from: IB::Symbols::Index.stoxx, strike: STRIKE_ESTX , expiry: IB::Symbols::Futures.next_expiry , trading_class: 'OESX' }
 
 		it{ is_expected.to be_a IB::Spread  }

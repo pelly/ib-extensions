@@ -342,10 +342,9 @@ If called without a parameter, all clients are accessed
 			## a possible response is best defined before the connect-attempt is done
 			# ##  Attention
 			# ##  @accounts are not initialized yet (empty array)
-			if block_given?
-				yield  self
+      yield  self if block_given?
 
-			end
+
 		end
 
 =begin
