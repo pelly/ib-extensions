@@ -65,7 +65,8 @@ read_yml = -> (key) do
 	
   ## The Block takes instructions which are executed  after initializing all instance-variables
   ## and prior to the connection-process
-  ## Here we just subscribe to some events  
+  ## Here we just subscribe to some events
+  begin
   C =  Connection.new  client_id: client_id, port: port  do |c|  # future use__ , optional_capacities: "+PACEAPI"  do |c|
 
     c.subscribe( :ContractData, :BondContractData) { |msg| c.logger.info { msg.contract.to_human } }
@@ -77,8 +78,8 @@ read_yml = -> (key) do
 #				puts
 #    end
 
-    c.subscribe( :OpenOrder){ |msg|  "Open Order detected and stored: C.received[:OpenOrders] " }
-		c.logger.level = Logger::INFO 
+    c.subscribe( :OpenOrder){ |msg|  c.logger.info "Open Order detected and stored: C.received[:OpenOrders] " }
+		c.logger.level = Logger::WARN   # set to INFO for more verbose output
 	end 
   unless  C.received[:OpenOrder].blank?
         puts "------------------------------- OpenOrders ----------------------------------"
@@ -90,5 +91,11 @@ read_yml = -> (key) do
   puts
   puts  "some basic Messages are subscribed and accordingly displayed"
   puts '-'* 45
+
+ rescue IB::TransmissionError => e
+      Connection.logger.fatal e.message
+      Connection.logger.fatal "Aborting"
+      Kernel.exit
+ end
 
   IRB.start(__FILE__)
