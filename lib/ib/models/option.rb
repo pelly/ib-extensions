@@ -12,12 +12,13 @@ module IB
 
     def roll **args
       error "specify strike and expiry to roll option" if args.empty?
+      args[:to] = args[:expiry] if args[:expiry].present?  && args[:expiry] =~ /[mwMW]$/
       args[:expiry]= IB::Spread.transform_distance( expiry, args.delete(:to  )) if args[:to].present?
       
       new_option =  merge( **args ).verify.first
       myself =  con_id.to_i.zero? ? self.verify.first  : self
       error "Cannot roll option; target is no IB::Contract" unless new_option.is_a? IB::Option
-      error "Cannot roll option; Option vannot be verified" unless myself.is_a? IB::Option
+      error "Cannot roll option; Option cannot be verified" unless myself.is_a? IB::Option
       target = IB::Spread.new exchange: exchange, symbol: symbol, currency: currency
       target.add_leg myself, action:  :buy
       target.add_leg new_option, action: :sell

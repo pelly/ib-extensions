@@ -7,6 +7,7 @@ module IB
 
     def roll **args
       error "specify expiry to roll a future" if args.empty?
+      args[:to] = args[:expiry] if args[:expiry].present?  && args[:expiry] =~ /[mwMW]$/
       args[:expiry]= IB::Spread.transform_distance( expiry, args.delete(:to  )) if args[:to].present?
       
       new_future =  merge( **args ).verify.first
