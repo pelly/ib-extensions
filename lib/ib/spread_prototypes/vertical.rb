@@ -54,7 +54,7 @@ module IB
 											 from
 										 end
 				kind = { :buy => fields.delete(:buy), :sell => fields.delete(:sell) }
-				error "Specifiaction of :buy and :sell nessesary, got: #{kind.inspect}" if kind.values.any?(nil)
+				error "Specification of :buy and :sell necessary, got: #{kind.inspect}" if kind.values.any?(nil)
 				initialize_spread( underlying ) do | the_spread |
 					leg_prototype  = Option.new underlying.attributes
 															.slice( :currency, :symbol, :exchange)

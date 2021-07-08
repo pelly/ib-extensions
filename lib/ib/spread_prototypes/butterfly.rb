@@ -25,7 +25,7 @@ module IB
 					error "fabrication is based on a master option. Please specify as first argument" unless master.is_a?(IB::Option)
 					strike = master.strike
 					master.right = :put unless master.right == :call
-					l=[] ; master.verify{|x| x.contract_detail= nil; l << x }
+					l= master.verify
 #					puts "master:  #{master.attributes.inspect}"
 					if l.empty?
 						error "Invalid Parameters. No Contract found #{master.to_human}" 
@@ -53,7 +53,6 @@ module IB
 
 				def  build from: , front:, back:,  **options
 					underlying_attributes =  { expiry: IB::Symbols::Futures.next_expiry, right: :put }.merge( from.attributes.slice( :symbol, :currency, :exchange, :strike )).merge( options )
-					puts underlying_attributes.inspect
 					fabricate  IB::Option.new( underlying_attributes), front: front, back: back
 				end
 
