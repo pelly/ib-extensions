@@ -80,7 +80,7 @@ module IB
 
 			def the_description spread
 			x= [ spread.combo_legs.map(&:weight) , spread.legs.map( &:last_trading_day )].transpose
-			# "<Calendar #{spread.symbol} #{spread.legs.first.right}(#{spread.legs.first.strike})[#{x.map{|w,l_t_d| "#{w} :#{Date.parse(l_t_d).strftime("%b %Y")} "}.join( '|+|' )} >"
+		 "<Calendar #{spread.symbol} #{spread.legs.first.right}(#{spread.legs.first.strike})[#{x.map{|w,l_t_d| "#{w} :#{Date.parse(l_t_d).strftime("%b %Y")} "}.join( '|+|' )} >"
 			end
 		 end # class
     end	# module vertical
