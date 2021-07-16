@@ -33,18 +33,18 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 (If multible keys are specified, local_id preceeds perm_id)
 
 =end
-		def locate_order local_id: nil, perm_id: nil, order_ref: nil, status: /ubmitted/, contract: nil, con_id: nil
-			search_option = [ local_id.present? ? [:local_id , local_id] : nil ,
-										perm_id.present? ? [:perm_id, perm_id] : nil,
-										order_ref.present? ? [:order_ref , order_ref ] : nil ].compact.first
-			matched_items = if search_option.nil?
-												orders
-											else
-												orders.find_all{|x| x[search_option.first].to_i == search_option.last.to_i }
-											end
+	def locate_order local_id: nil, perm_id: nil, order_ref: nil, status: /ubmitted/, contract: nil, con_id: nil
+		search_option = [ local_id.present? ? [:local_id , local_id] : nil ,
+							perm_id.present? ? [:perm_id, perm_id] : nil,
+							order_ref.present? ? [:order_ref , order_ref ] : nil ].compact.first
+		matched_items = if search_option.nil?
+							orders
+						else
+							orders.find_all{|x| x[search_option.first].to_i == search_option.last.to_i }
+						end
       if contract.present?
-        if contract.con_id.nil? || contract.con_id =="" || contract.con_id.zero? 
-          contract =  contract.verify.first unless contract.is_a? IB::Bag
+        if contract.con_id.zero?  && !contract.is_a?( IB::Bag )
+          contract =  contract.verify.first
         end
         matched_items = matched_items.find_all{|o| o.contract.essential == contract.essential } 
       elsif con_id.present?
@@ -74,99 +74,103 @@ convert_size: The action-attribute (:buy  :sell) is associated according the con
 
 The parameter «order» is modified!
 
-It can be used to modify and eventually cancel
+It can further used to modify and eventually cancel
 
-The method raises an  IB::TransmissionError if the transmitted order ist not acknowledged by the tws after
-one second.
 
 Example
 
    j36 =  IB::Stock.new symbol: 'J36', exchange: 'SGX'
    order =  IB::Limit.order size: 100, price: 65.5
    g =  IB::Gateway.current.clients.last
-
-	 g.preview contract: j36, order: order
+   g.preview contract: j36, order: order
       => {:init_margin=>0.10864874e6,
-			    :maint_margin=>0.9704137e5,
-					:equity_with_loan=>0.97877973e6,
-					:commission=>0.524e1,
-					:commission_currency=>"USD",
-					:warning=>""}
+		    :maint_margin=>0.9704137e5,
+			:equity_with_loan=>0.97877973e6,
+            :commission=>0.524e1,
+			:commission_currency=>"USD",
+			:warning=>""}
 
    the_local_id = g.place order: order
-		  => 67						# returns local_id
-	 order.contract			# updated contract-record
-      => #<IB::Contract:0x00000000013c94b0 @attributes={:con_id=>95346693,
-			                                                   :exchange=>"SGX",
-																												 :right=>"",
-																												 :include_expired=>false}>
+      => 67						# returns local_id
+   order.contract			# updated contract-record
+      => #<IB::Contract:0x00000000013c94b0 @attributes={:con_id=>9534669, 
+                                                        :exchange=>"SGX",
+                                                        :right=>"",
+                                                        :include_expired=>false}>
 
-		order.limit_price = 65   # set new price
-	  g.modify order: order    # and transmit
-		  => 67 # returns local_id
+   order.limit_price = 65   # set new price
+   g.modify order: order    # and transmit
+     => 67 # returns local_id
 
-		g.locate_order( local_id: the_local_id  )
-		  => returns the assigned order-record for inspection
+   g.locate_order( local_id: the_local_id  )
+     => returns the assigned order-record for inspection
 
-		g.cancel order: order
-				# logger output: 05:17:11 Cancelling 65 New #250/ from 3000/DU167349>
+    g.cancel order: order
+    # logger output: 05:17:11 Cancelling 65 New #250/ from 3000/DU167349>
 =end
 
-		def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false,  enable_error: false
-			# adjust the orderprice to  min-tick
-			result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
-			#·IB::Symbols are always qualified. They carry a description-field
-      qualified_contract = ->(c) { c.is_a?(IB::Contract) && ( c.description.present? || (c.con_id.present?  &&  !c.con_id.to_i.zero?) || (c.con_id.to_i <0  && c.sec_type == :bag )) }
+	def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false
+		# adjust the orderprice to  min-tick
+		result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
+		#·IB::Symbols are always qualified. They carry a description-field
+        qualified_contract = ->(c) { c.is_a?(IB::Contract) && ( c.description.present? || !c.con_id.to_i.zero? || (c.con_id.to_i <0  && c.sec_type == :bag )) }
 
-			order.contract ||=  if qualified_contract[ contract ]
-                        contract
-                         else
-                           contract.verify.first
-                         end
+		order.contract ||= if qualified_contract[ contract ]
+                              contract
+                           else
+                              contract.verify.first
+                           end
 
-      if order.contract.nil?
-       error "No valid contract given" if enable_error
-       return 0
-      end 
-			## sending of plain vanilla IB::Bags will fail using account.place, unless a (negative) con-id is provided!
-#			error "place order: ContractVerification failed. No con_id assigned"  unless qualified_contract[order.contract]
-			ib = IB::Connection.current
-			wrong_order = nil
-			the_local_id =  nil
+        error "No valid contract given" unless order.contract.is_a?(IB::Contract)
+        
+		## sending of plain vanilla IB::Bags will fail using account.place, unless a (negative) con-id is provided!
+		error "place order: ContractVerification failed. No con_id assigned"  unless qualified_contract[order.contract]
 
-			### Handle Error messages
-			### Default action:  raise IB::Transmission Error
-			sa = ib.subscribe( :Alert ) do | msg |
+		ib = IB::Connection.current
+		wrong_order = nil
+		the_local_id =  nil
+        q =  Queue.new
+
+        ### Handle Error messages
+		### Default action:  raise IB::Transmission Error
+		sa = ib.subscribe( :Alert ) do | msg |
   #      puts "local_id: #{the_local_id}"
 				if msg.error_id == the_local_id
-				 if [ 110, #  The price does not confirm to the minimum price variation for this contract
+                     if [ 110, #  The price does not confirm to the minimum price variation for this contract
 					   388,  # Order size x is smaller than the minimum required size of yy.
 					  ].include? msg.code
-           error msg.message if enable_error
-           wrong_order =  msg.error_id.to_i
-					 ib.logger.error msg.message
+                        error msg.message if enable_error
+                        wrong_order =  msg.error_id.to_i
+                        ib.logger.error msg.message
+                        q.close   # closing the queue indicates that no order was transmitted
 				 end
 				end
 			end
-			order.account =  account  # assign the account_id to the account-field of IB::Order
-      self.orders.update_or_create order, :order_ref
-      order.auto_adjust # if auto_adjust  /defined in lib/order_handling
-			if convert_size
-				order.action = order.total_quantity.to_i > 0  ?	:buy : :sell
-        logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
-				order.total_quantity  = order.total_quantity.to_i.abs
-			end
-				# apply non_guarenteed and other stuff bound to the contract to order.
-			order.attributes.merge! order.contract.order_requirements unless order.contract.order_requirements.blank?
-				#  con_id and exchange fully qualify a contract, no need to transmit other data
-			the_contract = order.contract.con_id >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil
-			the_local_id = order.place the_contract # return the local_id
-      i=0;	loop{i+=1; sleep(0.01); break if locate_order( local_id: the_local_id, status: nil ).present? || i> 1000  }
+        sb = ib.subscribe( :OpenOrder ){|m| q << m.order if m.order.local_id.to_i == the_local_id.to_i }
+        #  modify order (parameter) 
+		order.account =  account  # assign the account_id to the account-field of IB::Order
+        self.orders.update_or_create order, :order_ref
+        order.auto_adjust # if auto_adjust  /defined in lib/order_handling
+		if convert_size
+			order.action = order.total_quantity.to_i > 0  ? :buy : :sell
+            logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
+			order.total_quantity  = order.total_quantity.to_i.abs
+		end
+		# apply non_guarenteed and other stuff bound to the contract to order.
+		order.attributes.merge! order.contract.order_requirements unless order.contract.order_requirements.blank?
+		#  con_id and exchange fully qualify a contract, no need to transmit other data
+        #  if no contract is passed to order.place, order.contract is used for placement
+		the_contract = order.contract.con_id.to_i >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil
+		the_local_id = order.place the_contract # return the local_id
+        
+        Thread.new{  sleep 1  ;  q.close }
+        order = q.pop
 
-			ib.unsubscribe sa
-      raise IB::TransmissionError," #{order.to_human} is not transmitted properly" if i >=1000
-      the_local_id  # return_value
-		end # place
+		ib.unsubscribe sa
+		ib.unsubscribe sb
+        raise IB::TransmissionError," #{order.to_human} is not transmitted properly" if q.closed?
+        the_local_id  # return_value
+	end # place
 
 		# shortcut to enable
 		#  account.place order: {} , contract: {}
@@ -217,14 +221,21 @@ This has to be done manualy in the provided block
 		#
 	def preview order:, contract: nil, **args_which_are_ignored
 		# to_do:  use a copy of order instead of temporary setting order.what_if
+        q =  Queue.new
+        ib =  IB::Connection.current
+        the_local_id = nil
+        req =  ib.subscribe( :OpenOrder ){|m| q << m.order if m.order.local_id.to_i == the_local_id.to_i }
+           
 		result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
 		order.what_if = true
 		the_local_id = place_order order: order, contract: contract
-		i=0; loop{ i= i+1;  break if result[the_local_id] || i > 1000; sleep 0.01 }
-    raise IB::TransmissionError,"(Preview-) #{order.to_human} is not transmitted properly" if i >=1000
+        Thread.new{  sleep 1  ;  q.close }
+        returned_order = q.pop
+        ib.unsubscribe req
+        raise IB::TransmissionError,"(Preview-) #{order.to_human} is not transmitted properly" if q.closed?
 		order.what_if = false # reset what_if flag
 		order.local_id = nil  # reset local_id to enable re-using the order-object for placing
-		result[the_local_id].order_state.forcast  #  return_value
+		returned_order.order_state.forcast  #  return_value
 	end 
 
 # closes the contract by submitting an appropiate order
@@ -254,12 +265,12 @@ This has to be done manualy in the provided block
 		error "Cannot transmit the order – No Contract given " unless order.contract.is_a?(IB::Contract)
 	
 		the_quantity = if reverse
-														 -contract_size[order.contract] * 2 
-													 elsif order.total_quantity.abs < 1 && !order.total_quantity.zero? 
-														-contract_size[order.contract] *  order.total_quantity.abs 
-													 else
-														 -contract_size[order.contract] 
-													 end
+						 -contract_size[order.contract] * 2 
+					 elsif order.total_quantity.abs < 1 && !order.total_quantity.zero? 
+						-contract_size[order.contract] *  order.total_quantity.abs 
+					 else
+						-contract_size[order.contract] 
+					 end
 		if the_quantity.zero?
 			logger.info{ "Cannot close #{order.contract.to_human} - no position detected"}
 		else
