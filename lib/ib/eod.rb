@@ -52,11 +52,15 @@ require 'csv'
 		end
 	end
 	class Contract
-		# Receive EOD-Data
+		# Receive EOD-Data and store the data in the `:bars`-property of IB::Contract
+    #
+    # contract.eod duration: {String or Integer}, start: {Date}, to: {Date} what: {see below} 
 		#
-		# The Enddate has to be specified (as Date Object), `:to`
+    #
+    #
+    # The Enddate has to be specified (as Date Object), `:to`,  default: Date.today
 		#
-		# The Duration can either be specified as Sting " yx D" or as Integer.
+		# The Duration can either be specified as Sting "yx D", "yd W", "yx M" or as Integer.
     #
 		# Alternatively a start date can be specified with the `:start` parameter.
 		#
@@ -70,14 +74,17 @@ require 'csv'
     # Error-handling
     # --------------
     # * Basically all Errors simply lead to log-entries:
-    # * the contract is not valid, 
-    # * no market data subscriptions 
+    # * the contract is not valid,
+    # * no market data subscriptions
     # * other servers-side errors
     # 
     # If the duration is longer then the maximum range, the response is
-    # cut to the maximum allowed range. 
+    # cut to the maximum allowed range
     #
-		# The results are stored in `:bars` and can be preprocessed through a block, thus
+    # Customize the result
+    # --------------------
+		# The results are stored in the `:bars` property of the contract
+    # and can be preprocessed through a block, thus
 		#
 		# puts IB::Symbols::Index::stoxx.eod( duration: '10 d')){|r| r.to_human}
 		#   <Bar: 2019-04-01 wap 0.0 OHLC 3353.67 3390.98 3353.67 3385.38 trades 1750 vol 0>
@@ -91,7 +98,14 @@ require 'csv'
 		#   <Bar: 2019-04-11 wap 0.0 OHLC 3430.73 3442.25 3412.15 3435.34 trades 1773 vol 0>
 		#   <Bar: 2019-04-12 wap 0.0 OHLC 3432.16 3454.77 3425.84 3447.83 trades 1715 vol 0>
 		#
-		# «to_human« is not needed here because its aliased with `to_s`
+    #
+    # Limitations
+    # -----------
+    # To identify a request, the con_id of the asset is used
+    # Thus, parallel requests of a single asset with different time-frames will fail
+    #
+    # Examples
+    # --------
 		#
 		# puts Symbols::Stocks.wfc.eod(  start: Date.new(2019,10,9), duration: 3 )
 		#		<Bar: 2020-10-23 wap 23.3675 OHLC 23.55 23.55 23.12 23.28 trades 5778 vol 50096>
@@ -103,6 +117,18 @@ require 'csv'
 		#		<Bar: 2019-10-07 wap 48.9445 OHLC 48.91 49.29 48.75 48.81 trades 10317 vol 50189>
 		#		<Bar: 2019-10-08 wap 47.9165 OHLC 48.25 48.34 47.55 47.82 trades 12607 vol 53577>
 		#
+    # puts Stock.new(symbol: :iwm).eod(  start: Date.new(2019,10,9) , duration: '3W' )
+    #   <Bar: (02.07.21)00:00:00 wap 229.921 OHLC 229.19 232.33 227.42 229.19 trades 308673 vol 543523>
+    #   <Bar: (09.07.21)00:00:00 wap 223.676 OHLC 229.01 230.15 217.85 226.7 trades 628599 vol 1003058>
+    #   <Bar: (16.07.21)00:00:00 wap 219.844 OHLC 225.15 226.89 214.47 214.95 trades 782081 vol 1275212>
+    #   <Bar: (20.07.21)00:00:00 wap 213.574 OHLC 212.62 219.27 209.05 218.97 trades 489533 vol 805738>
+    #
+    # puts Stock.new(symbol: :iwm).eod(  start: Date.new(2019,10,9), duration: '3M' )
+    #   <Bar: (30.04.21)00:00:00 wap 226.194 OHLC 221.79 230.95 220.78 225.09 trades 766915 vol 1292828>
+    #   <Bar: (28.05.21)00:00:00 wap 220.385 OHLC 226.86 228.5 210.19 225.6 trades 2585436 vol 4182406>
+    #   <Bar: (30.06.21)00:00:00 wap 228.693 OHLC 226.65 233.7 221.13 230.27 trades 2557100 vol 4269840>
+    #   <Bar: (20.07.21)00:00:00 wap 220.491 OHLC 230.77 232.33 209.05 218.97 trades 2105400 vol 3412088>
+    #  
 		def eod start:nil, to: Date.today, duration: nil , what: :trades
 
 			tws = IB::Connection.current
@@ -127,19 +153,27 @@ require 'csv'
 		  end
 
 			duration =  if duration.present?
-										duration.is_a?(String) ? duration : duration.to_s + " D"
+                 duration.is_a?(String) ? duration.gsub(" ", "") : duration.to_s + "D"
 									elsif start.present?
-										BuisinesDays.business_days_between(start, to).to_s + " D"
+										BuisinesDays.business_days_between(start, to).to_s + "D"
 									else
-										"1 D"
-									end
+										"1D"
+                  end.insert(-2, " ")
 
+      barsize = case duration[-1]
+                when "D"
+                  :day1
+                when "W"
+                  :week1
+                when "M"
+                  :month1
+                end
 			tws.send_message IB::Messages::Outgoing::RequestHistoricalData.new(
 				:request_id => con_id,
 				:contract =>  self,
 				:end_date_time => to.to_time.to_ib, #  Time.now.to_ib,
 				:duration => duration, #    ?
-				:bar_size => :day1, #  IB::BAR_SIZES.key(:hour)?
+				:bar_size => barsize, #  IB::BAR_SIZES.key(:hour)?
 				:what_to_show => what,
 				:use_rth => 0,
 				:format_date => 2,
@@ -155,9 +189,7 @@ require 'csv'
 		end # def
 
     # creates (or overwrites) the specified file (or symbol.csv) and saves bar-data
-    def to_csv file:nil
-      file ||=  "#{symbol}.csv"
-
+    def to_csv file: "#{symbol}.csv"
       if bars.present?
         headers = bars.first.invariant_attributes.keys
         CSV.open( file, 'w' ) {|f| f << headers ; bars.each {|y| f << y.invariant_attributes.values } }
