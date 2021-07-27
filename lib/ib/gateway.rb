@@ -305,13 +305,28 @@ account_data provides a thread-safe access to linked content of accounts
 It returns an Array of the return-values of the block
 
 If called without a parameter, all clients are accessed
+
+Example
+
+```
+g = IB::Gateway.current
+# thread safe access
+g.account_data &:portfolio_values
+
+g.account_data &:account_values
+
+# primitive access
+g.clients.map &:portfolio_values
+g.clients.map &:account_values
+
+```
 =end
 
 		def account_data account_or_id=nil
 
 			safe = ->(account) do
 				@account_lock.synchronize do
-					yield account 
+          yield account
 				end
 			end
 

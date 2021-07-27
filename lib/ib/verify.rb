@@ -96,13 +96,12 @@ module IB
     # otherwise the Contract is untouched
     def _verify  &b # :nodoc:
       ib = Connection.current
-      error "No Connection"  unless ib.is_a? IB::Connection
+      error "No Connection"  unless ib.is_a? Connection
       # we generate a Request-Message-ID on the fly
       error "Either con_id or sec_type have to be set", :verify if con_id.to_i.zero?  && sec_type.blank?
       # define local vars which are updated within the query-block
       received_contracts = []
       queue = Queue.new
-      a = nil
       message_id = nil
 
       # a tws-request is suppressed for bags and if the contract_detail-record is present
