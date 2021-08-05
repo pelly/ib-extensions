@@ -1,24 +1,24 @@
 module IB
 
-	class Account
+  class Account
 
 
-		def account_data_scan search_key, search_currency=nil
-			if account_values.is_a? Array
-				if search_currency.present?
-					account_values.find_all{|x| x.key.match( search_key )  && x.currency == search_currency.upcase }
-				else
-					account_values.find_all{|x| x.key.match( search_key ) }
-				end
+    def account_data_scan search_key, search_currency=nil
+      if account_values.is_a? Array
+        if search_currency.present?
+          account_values.find_all{|x| x.key.match( search_key )  && x.currency == search_currency.upcase }
+        else
+          account_values.find_all{|x| x.key.match( search_key ) }
+        end
 
-			else  # not tested!!
-				if search_currency.present?
-					account_values.where( ['key like %', search_key] ).where( currency: search_currency )
-				else  # any currency
-					account_values.where( ['key like %', search_key] )
-				end
-			end
-		end
+      else  # not tested!!
+        if search_currency.present?
+          account_values.where( ['key like %', search_key] ).where( currency: search_currency )
+        else  # any currency
+          account_values.where( ['key like %', search_key] )
+        end
+      end
+    end
 
 
 
@@ -41,7 +41,8 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
 							orders
 						else
 							orders.find_all{|x| x[search_option.first].to_i == search_option.last.to_i }
-						end
+            end
+
       if contract.present?
         if contract.con_id.zero?  && !contract.is_a?( IB::Bag )
           contract =  contract.verify.first
@@ -51,13 +52,13 @@ Thus if several Orders are placed with the same order_ref, the active one is ret
         matched_items = matched_items.find_all{|o| o.contract.con_id == con_id } 
       end
 
-			if status.present?
-				status = Regexp.new(status) unless status.is_a? Regexp
-				matched_items.detect{|x| x.order_state.status =~ status }
-			else
-				matched_items.last  # return the last item
-			end
-		end
+      if status.present?
+        status = Regexp.new(status) unless status.is_a? Regexp
+        matched_items.detect{|x| x.order_state.status =~ status }
+      else
+        matched_items.last  # return the last item
+      end
+    end
 
 
 =begin rdoc
@@ -82,17 +83,19 @@ Example
    j36 =  IB::Stock.new symbol: 'J36', exchange: 'SGX'
    order =  IB::Limit.order size: 100, price: 65.5
    g =  IB::Gateway.current.clients.last
+
    g.preview contract: j36, order: order
       => {:init_margin=>0.10864874e6,
-		    :maint_margin=>0.9704137e5,
-			:equity_with_loan=>0.97877973e6,
-            :commission=>0.524e1,
-			:commission_currency=>"USD",
-			:warning=>""}
+          :maint_margin=>0.9704137e5,
+          :equity_with_loan=>0.97877973e6,
+          :commission=>0.524e1,
+          :commission_currency=>"USD",
+          :warning=>""
 
    the_local_id = g.place order: order
       => 67						# returns local_id
    order.contract			# updated contract-record
+
       => #<IB::Contract:0x00000000013c94b0 @attributes={:con_id=>9534669, 
                                                         :exchange=>"SGX",
                                                         :right=>"",
@@ -172,27 +175,29 @@ Example
         the_local_id  # return_value
 	end # place
 
-		# shortcut to enable
-		#  account.place order: {} , contract: {}
-		#  account.preview order: {} , contract: {}
-		#  account.modify order: {}
-		alias place place_order
+
+    # shortcut to enable
+    #  account.place order: {} , contract: {}
+    #  account.preview order: {} , contract: {}
+    #  account.modify order: {}
+    alias place place_order
 
 =begin #rdoc
 Account#ModifyOrder operates in two modi:
 
 First: The order is specified  via local_id, perm_id or order_ref.
-	It is checked, whether the order is still modificable.
-	Then the Order ist provided through  the block. Any modification is done there.
-	Important: The Block has to return the modified IB::Order
+  It is checked, whether the order is still modificable.
+  Then the Order ist provided through  the block. Any modification is done there.
+  Important: The Block has to return the modified IB::Order
 
 Second: The order can be provided as parameter as well. This will be used
 without further checking. The block is now optional. 
-	Important: The OrderRecord must provide a valid Contract.
+  Important: The OrderRecord must provide a valid Contract.
 
 The simple version does not adjust the given prices to tick-limits.
 This has to be done manualy in the provided block
 =end
+
 
 		def modify_order  local_id: nil, order_ref: nil, order:nil
 
@@ -344,4 +349,5 @@ This has to be done manualy in the provided block
 #<PortfolioValue: DU167348 Pos=-3 @ 142.574;Value=-4277.22;PNL=-867.72 unrealized;<Option: ESTX50 20181221 put 3200.0  EUR>
 # => nil 
 #		# 
+
 end ## module 
