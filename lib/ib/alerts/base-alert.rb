@@ -43,15 +43,15 @@ Important: The class is accessed asynchronically. Be careful while raising inter
 
 		def self.method_missing( method_id, msg , *args, &block )
 			if msg.is_a?  IB::Messages::Incoming::Alert
-				logger.debug { msg.to_human }
+#				IB::Connection.logger.debug { msg.to_human }
 			else
-				logger.error { "Argument to IB::Alert is not a IB::Messages::Incoming::Alert" }
-				logger.error { "The object: #{msg.inspect} " }
+				IB::Connection.logger.error { "Argument to IB::Alert is not a IB::Messages::Incoming::Alert" }
+				IB::Connection.logger.error { "The object: #{msg.inspect} " }
 			end
 		rescue NoMethodError
-			unless logger.nil?
-				logger.error { "The Argument is not a valid  IB::Messages:Incoming::Alert object"}
-				logger.error { "The object: #{msg.inspect} " }
+			unless IB::Connection.logger.nil?
+				IB::Connection.logger.error { "The Argument is not a valid  IB::Messages:Incoming::Alert object"}
+				IB::Connection.logger.error { "The object: #{msg.inspect} " }
 			else
 				puts "No Logging-Device specified"
 				puts "The object: #{msg.inspect} "
@@ -61,9 +61,6 @@ Important: The class is accessed asynchronically. Be careful while raising inter
 
 
       class << self
-  def logger
-    IB::Connection.logger || IB::Gateway.logger
-  end
 
 	def ignore_alert  *codes
 	  codes.each do |n|
@@ -78,7 +75,7 @@ Important: The class is accessed asynchronically. Be careful while raising inter
 	  codes.each do |n|
 	    class_eval <<-EOD
 	      def self.alert_#{n} msg
-	      logger.info { msg.to_human }
+#	      IB::Connection.logger.info { msg.to_human }
 		end              
 	      EOD
 	  end
@@ -87,7 +84,7 @@ Important: The class is accessed asynchronically. Be careful while raising inter
 	  codes.each do |n|
 	    class_eval <<-EOD
 	      def self.alert_#{n} msg
-	      logger.warn { msg.to_human }
+#	      IB::Connection.logger.warn { msg.to_human }
 		end              
 	      EOD
 	  end
@@ -98,9 +95,9 @@ Important: The class is accessed asynchronically. Be careful while raising inter
 	    class_eval <<-EOD
 	      def self.alert_#{n} msg
 		if msg.error_id.present? && msg.error_id > 0
-		  logger.error {  msg.message + ' id: ' + msg.error_id.to_s }
+#		  IB::Connection.logger.error {  msg.message + ' id: ' + msg.error_id.to_s }
 		else
-		  logger.error {  msg.message   }
+#		  IB::Connection.logger.error {  msg.message   }
 		end
 	      end              
 	      EOD
