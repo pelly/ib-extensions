@@ -112,7 +112,7 @@ Example
     # logger output: 05:17:11 Cancelling 65 New #250/ from 3000/DU167349>
 =end
 
-  def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false, enable_error: false
+  def place_order  order:, contract: nil, auto_adjust: true, convert_size: true 
     # adjust the orderprice to  min-tick
     result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
     #·IB::Symbols are always qualified. They carry a description-field
@@ -157,7 +157,7 @@ Example
     order.auto_adjust  if auto_adjust # /defined in  file order_handling.rb
     puts order.to_human
     if convert_size
-      order.action = order.total_quantity.to_i > 0  ? :buy : :sell
+      order.action = order.total_quantity.to_i > 0  ? :buy : :sell  unless order.action == :sell
       logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
       order.total_quantity  = order.total_quantity.to_i.abs
     end
