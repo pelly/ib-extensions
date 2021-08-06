@@ -71,7 +71,7 @@ shared_examples_for 'OpenOrder message' do
     expect( o.local_id ).to be_an Integer
     expect( o.perm_id ).to  be_an Integer
     expect(IB::VALUES[:clearing_intent].values). to include o.clearing_intent
-    expect( o.order_type ).to eq :limit
+    expect(IB::ORDER_TYPES.values).to include  o.order_type
     expect( IB::VALUES[:tif].values ).to include o.tif
     #expect( o.status ).to match /Submit/
     expect( o.clearing_intent ).to eq :ib
@@ -83,7 +83,7 @@ shared_examples_for 'OpenOrder message' do
     expect(os.perm_id).to  be_an Integer 
     expect(os.perm_id.to_s).to  match  /^\d{9,11}$/   # has 9 to 11 numeric characters
     expect(os.parent_id).to be_zero
-    expect(os.submitted?).to be_truthy
+    expect(os.submitted? || os.complete_fill? ).to be_truthy
   end
 
 

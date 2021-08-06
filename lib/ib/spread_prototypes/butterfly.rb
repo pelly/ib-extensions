@@ -26,7 +26,6 @@ module IB
 					strike = master.strike
 					master.right = :put unless master.right == :call
 					l= master.verify
-#					puts "master:  #{master.attributes.inspect}"
 					if l.empty?
 						error "Invalid Parameters. No Contract found #{master.to_human}" 
 					elsif l.size > 1
@@ -43,7 +42,7 @@ module IB
 						strikes = [front, master.strike, back]
 						strikes.zip([1, -2, 1]).each do |strike, ratio|
 							action = ratio >0 ?  :buy : :sell
-							leg =  IB::Option.new( master.attributes.merge( strike: strike )).verify!.essential
+              leg =  IB::Option.new( master.attributes.merge( strike: strike )).verify.first.essential
 							the_spread.add_leg  leg,  action: action,  ratio: ratio.abs 
 						end
 						the_spread.description =  the_description( the_spread )

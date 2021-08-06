@@ -10,26 +10,25 @@ RSpec.describe "What IF  Order"   do
 
 	context "Butterfly" do
 		before(:all) do
-			gw =  IB::Gateway.current
-			if gw
-			@initial_order_id =  gw.tws.next_local_id
+      gw =  IB::Gateway.current
+      if gw
+        @initial_order_id =  gw.tws.next_local_id
 
-			gw.tws.clear_received   # just in case ...
+        gw.tws.clear_received   # just in case ...
 
-			the_contract = IB::Butterfly.build from: IB::Stock.new( symbol: :goog ), expiry: 202103,
-				                                 right: :call, strike: 1550, front: 1530, back: 1570 
+        the_contract =  IB::Butterfly.build( from: IB::Stock.new( symbol: :goog ), expiry: 202112,
+                                            right: :call, strike: 2700, front: 2650, back: 2750 )
+        market_price =  3 #  the_contract.market_price 
+        the_client =  gw.clients.detect{|x| x.account == ACCOUNT }
 
-			market_price =  23 #  the_contract.market_price 
-			the_client =  gw.clients.detect{|x| x.account == ACCOUNT }
+        @local_id_placed = the_client.preview contract: the_contract,
+          order: IB::Limit.order( action: :buy,
+                                 limit_price: market_price ,
+                                 size: 10 )
+      end
+    end
 
-			@local_id_placed = the_client.preview contract: the_contract,
-                                            order: IB::Limit.order( action: :buy,
-												limit_price: market_price ,
-												size: 10 )
-     end
-		end
-
-		context IB::Connection  do
+		context IB::Connection do
 			subject{  IB::Connection.current  }
 			its( :next_local_id ){ is_expected.to eq @initial_order_id +1 }
 			it { expect( subject.received[:OpenOrder]).to have_at_least(1).open_order_message }

@@ -155,9 +155,8 @@ Example
     order.account =  account  # assign the account_id to the account-field of IB::Order
     self.orders.update_or_create order, :order_ref
     order.auto_adjust  if auto_adjust # /defined in  file order_handling.rb
-    puts order.to_human
     if convert_size
-      order.action = order.total_quantity.to_i > 0  ? :buy : :sell  unless order.action == :sell
+      order.action = order.total_quantity.to_i < 0 ? :sell : :buy unless order.action == :sell
       logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
       order.total_quantity  = order.total_quantity.to_i.abs
     end
@@ -167,18 +166,22 @@ Example
     #  if no contract is passed to order.place, order.contract is used for placement
     the_contract = order.contract.con_id.to_i >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil
     the_local_id = order.place the_contract # return the local_id
-
-    Thread.new{  sleep 1  ;  q.close }
-    order = q.pop
+    # if transmit is false, just include the local_id in the order-record
+    Thread.new{  if order.transmit  || order.what_if  then sleep 1 else sleep 0.001 end ;  q.close }
+    tws_answer = q.pop
 
     ib.unsubscribe sa
     ib.unsubscribe sb
     if q.closed? 
-      if order.present?
-      error " #{order.to_human} is not transmitted properly", :symbol
+      if wrong_order.present?
+        raise IB::SymbolError,  wrong_order
+      elsif the_local_id.present?
+        order.local_id = the_local_id
       else
-      error wrong_order, :symbol
+      error " #{order.to_human} is not transmitted properly", :symbol
       end
+    else
+      order=tws_answer #  return order-record received from tws
     end
     the_local_id  # return_value
   end # place
@@ -230,26 +233,27 @@ This has to be done manualy in the provided block
 		#
 		# The order received from the TWS is kept in account.orders
 		#
-		# Raises IB::TransmissionError if the Order could not be placed properly
+		# Raises IB::SymbolError if the Order could not be placed properly
 		#
 	def preview order:, contract: nil, **args_which_are_ignored
 		# to_do:  use a copy of order instead of temporary setting order.what_if
-        q =  Queue.new
-        ib =  IB::Connection.current
-        the_local_id = nil
-        req =  ib.subscribe( :OpenOrder ){|m| q << m.order if m.order.local_id.to_i == the_local_id.to_i }
-           
-		result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
-		order.what_if = true
-		the_local_id = place_order order: order, contract: contract
-        Thread.new{  sleep 1  ;  q.close }
-        returned_order = q.pop
-        ib.unsubscribe req
-        raise IB::TransmissionError,"(Preview-) #{order.to_human} is not transmitted properly" if q.closed?
-		order.what_if = false # reset what_if flag
-		order.local_id = nil  # reset local_id to enable re-using the order-object for placing
-		returned_order.order_state.forcast  #  return_value
-	end 
+    q =  Queue.new
+    ib =  IB::Connection.current
+    the_local_id = nil
+    req =  ib.subscribe( :OpenOrder ){|m| q << m.order if m.order.local_id.to_i == the_local_id.to_i }
+
+    result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
+    order.what_if = true
+    order.account = account
+    the_local_id = order.place  contract
+    Thread.new{  sleep 1  ;  q.close }
+    returned_order = q.pop
+    ib.unsubscribe req
+    order.what_if = false # reset what_if flag
+    order.local_id = nil  # reset local_id to enable re-using the order-object for placing
+    raise IB::SymbolError,"(Preview-) #{order.to_human} is not transmitted properly" if q.closed?
+    returned_order.order_state.forcast  #  return_value
+  end 
 
 # closes the contract by submitting an appropiate order
 	# the action- and total_amount attributes of the assigned order are overwritten.

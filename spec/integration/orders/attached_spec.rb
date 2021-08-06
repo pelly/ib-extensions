@@ -5,8 +5,8 @@ require 'combo_helper'
 def define_contracts
   @contracts = {
     :stock => IB::Symbols::Stocks.wfc,
-		:butterfly	=> IB::Butterfly.build( from: IB::Stock.new( symbol: :goog ), expiry: 202103,
-				                                 right: :call, strike: 1550, front: 1530, back: 1570 )
+		:butterfly	=> IB::Butterfly.build( from: IB::Stock.new( symbol: :goog ), expiry: 202112,
+				                                 right: :call, strike: 2700, front: 2650, back: 2750 )
   }
 end
 ## in premarket condition GTC BUY (butterfly) limit order with attached LMT SELL  fails!
@@ -34,10 +34,12 @@ describe 'Attached Orders', :connected => true, :integration => true , :us_tradi
 
 		before(:all) do
 			gw = IB::Gateway.current
+      gw.update_orders
 			gw.tws.clear_received # to avoid conflict with pre-existing Orders
 			client =  gw.clients.detect{|x| x.account == ACCOUNT}
 			#p [contract, qty, tif, attach_type ]
 			@the_contract = @contracts[contract] 
+			the_order=  IB::Limit.order( size: qty, price: price, action: :buy, tif: tif, transmit: false ) 
 			@local_id_placed = 	client.place  contract: @the_contract, 
 				order: IB::Limit.order( size: qty, price: price, action: :buy, tif: tif, transmit: false ) 
 		end
@@ -118,7 +120,8 @@ describe 'Attached Orders', :connected => true, :integration => true , :us_tradi
           ib.send_message :RequestOpenOrders
           ib.wait_for :OpenOrderEnd
 					if !ib.received[:OpenOrder].size.zero?
-						expect( ib.received[:OrderStatus].first.status ).to eq 'PendingCancel'
+            expect( ib.received[:OrderStatus].find{|y| y.status == 'PendingCancel'} ).to be_a IB::Messages::Incoming::OrderStatus
+#            expect( ib.received[:OrderStatus].last.status ).to eq 'PendingCancel'
 					else
 						expect( ib.received[:OpenOrder]).to have_exactly(0).order_message
 					end
