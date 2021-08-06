@@ -112,75 +112,83 @@ Example
     # logger output: 05:17:11 Cancelling 65 New #250/ from 3000/DU167349>
 =end
 
-	def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false
-		# adjust the orderprice to  min-tick
-		result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
-		#·IB::Symbols are always qualified. They carry a description-field
-        qualified_contract = ->(c) { c.is_a?(IB::Contract) && ( c.description.present? || !c.con_id.to_i.zero? || (c.con_id.to_i <0  && c.sec_type == :bag )) }
+  def place_order  order:, contract: nil, auto_adjust: true, convert_size:  false, enable_error: false
+    # adjust the orderprice to  min-tick
+    result = ->(l){ orders.detect{|x| x.local_id == l  && x.submitted? } }
+    #·IB::Symbols are always qualified. They carry a description-field
+    qualified_contract = ->(c) { c.is_a?(IB::Contract) && ( c.description.present? || !c.con_id.to_i.zero? || (c.con_id.to_i <0  && c.sec_type == :bag )) }
 
-		order.contract ||= if qualified_contract[ contract ]
-                              contract
-                           else
-                              contract.verify.first
-                           end
+    order.contract ||= if qualified_contract[ contract ]
+                         contract
+                       else
+                         contract.verify.first
+                       end
 
-        error "No valid contract given" unless order.contract.is_a?(IB::Contract)
-        
-		## sending of plain vanilla IB::Bags will fail using account.place, unless a (negative) con-id is provided!
-		error "place order: ContractVerification failed. No con_id assigned"  unless qualified_contract[order.contract]
+    error "No valid contract given" unless order.contract.is_a?(IB::Contract)
 
-		ib = IB::Connection.current
-		wrong_order = nil
-		the_local_id =  nil
-        q =  Queue.new
+    ## sending of plain vanilla IB::Bags will fail using account.place, unless a (negative) con-id is provided!
+    error "place order: ContractVerification failed. No con_id assigned"  unless qualified_contract[order.contract]
 
-        ### Handle Error messages
-		### Default action:  raise IB::Transmission Error
-		sa = ib.subscribe( :Alert ) do | msg |
-  #      puts "local_id: #{the_local_id}"
-				if msg.error_id == the_local_id
-                     if [ 110, #  The price does not confirm to the minimum price variation for this contract
-					   388,  # Order size x is smaller than the minimum required size of yy.
-					  ].include? msg.code
-                        error msg.message if enable_error
-                        wrong_order =  msg.error_id.to_i
-                        ib.logger.error msg.message
-                        q.close   # closing the queue indicates that no order was transmitted
-				 end
-				end
-			end
-        sb = ib.subscribe( :OpenOrder ){|m| q << m.order if m.order.local_id.to_i == the_local_id.to_i }
-        #  modify order (parameter) 
-		order.account =  account  # assign the account_id to the account-field of IB::Order
-        self.orders.update_or_create order, :order_ref
-        order.auto_adjust # if auto_adjust  /defined in lib/order_handling
-		if convert_size
-			order.action = order.total_quantity.to_i > 0  ? :buy : :sell
-            logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
-			order.total_quantity  = order.total_quantity.to_i.abs
-		end
-		# apply non_guarenteed and other stuff bound to the contract to order.
-		order.attributes.merge! order.contract.order_requirements unless order.contract.order_requirements.blank?
-		#  con_id and exchange fully qualify a contract, no need to transmit other data
-        #  if no contract is passed to order.place, order.contract is used for placement
-		the_contract = order.contract.con_id.to_i >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil
-		the_local_id = order.place the_contract # return the local_id
-        
-        Thread.new{  sleep 1  ;  q.close }
-        order = q.pop
+    ib = IB::Connection.current
+    wrong_order = nil
+    the_local_id =  nil
+    q =  Queue.new
 
-		ib.unsubscribe sa
-		ib.unsubscribe sb
-        raise IB::TransmissionError," #{order.to_human} is not transmitted properly" if q.closed?
-        the_local_id  # return_value
-	end # place
+    ### Handle Error messages
+    ### Default action:  raise IB::Transmission Error
+    sa = ib.subscribe( :Alert ) do | msg |
+      #      puts "local_id: #{the_local_id}"a
+      puts msg.inspect
+      if msg.error_id == the_local_id
+        if [ 110, #  The price does not confirm to the minimum price variation for this contract
+            355, # Order size does not conform to market rule
+            388,  # Order size x is smaller than the minimum required size of yy.
+        ].include? msg.code
+          wrong_order =  msg.message
+          ib.logger.error msg.message
+          q.close   # closing the queue indicates that no order was transmitted
+        end
+      end
+    end
+    sb = ib.subscribe( :OpenOrder ){|m| q << m.order if m.order.local_id.to_i == the_local_id.to_i }
+    #  modify order (parameter) 
+    order.account =  account  # assign the account_id to the account-field of IB::Order
+    self.orders.update_or_create order, :order_ref
+    order.auto_adjust  if auto_adjust # /defined in  file order_handling.rb
+    puts order.to_human
+    if convert_size
+      order.action = order.total_quantity.to_i > 0  ? :buy : :sell
+      logger.info{ "Converted ordesize to #{order.total_quantity} and triggered a #{order.action}  order"} if  order.total_quantity.to_i < 0
+      order.total_quantity  = order.total_quantity.to_i.abs
+    end
+    # apply non_guarenteed and other stuff bound to the contract to order.
+    order.attributes.merge! order.contract.order_requirements unless order.contract.order_requirements.blank?
+    #  con_id and exchange fully qualify a contract, no need to transmit other data
+    #  if no contract is passed to order.place, order.contract is used for placement
+    the_contract = order.contract.con_id.to_i >0 ? Contract.new( con_id: order.contract.con_id, exchange: order.contract.exchange) : nil
+    the_local_id = order.place the_contract # return the local_id
+
+    Thread.new{  sleep 1  ;  q.close }
+    order = q.pop
+
+    ib.unsubscribe sa
+    ib.unsubscribe sb
+    if q.closed? 
+      if order.present?
+      error " #{order.to_human} is not transmitted properly", :symbol
+      else
+      error wrong_order, :symbol
+      end
+    end
+    the_local_id  # return_value
+  end # place
 
 
-    # shortcut to enable
-    #  account.place order: {} , contract: {}
-    #  account.preview order: {} , contract: {}
-    #  account.modify order: {}
-    alias place place_order
+  # shortcut to enable
+  #  account.place order: {} , contract: {}
+  #  account.preview order: {} , contract: {}
+  #  account.modify order: {}
+  alias place place_order
 
 =begin #rdoc
 Account#ModifyOrder operates in two modi:

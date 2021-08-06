@@ -56,7 +56,7 @@ end
 
 def init_gateway
   args= OPTS[:connection].slice(:port, :host, :client_id).merge(  serial_array: true,  logger: mock_logger)
-	gw = IB::Gateway.new  args
+	gw = IB::Gateway.new  **args
   if gw
 		if va = gw.clients.detect{|c| c.account == ACCOUNT }
 			OPTS[:account_verified] = true
