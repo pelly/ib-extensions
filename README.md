@@ -7,7 +7,7 @@ __Documentation: [https://ib-ruby.github.io/ib-doc/](https://ib-ruby.github.io/i
 __Questions, Contributions, Remarks: [Discussions are opened in ib-api](https://github.com/ib-ruby/ib-api/discussions)__
 
 ---
-__STATUS:  Preparing for a GEM-Release, scheduled for July__  (delayed to August)
+__STATUS:  Preparing for a GEM-Release, scheduled for  August__
 ---
 
 __Helpers and Macros that ease the usage of the TWS-API of Interactive Brokers__
