@@ -24,7 +24,7 @@ describe "Trades", :connected => true, :integration => true, :slow => true do
       before(:all) do
 				ib = IB::Connection.current
         @local_id_placed = place_the_order contract: IB::Symbols::Forex.eurusd do | price |
-          @order=  IB::Market.order :size => 20000,				# order and contract cannot be uised on this level
+          @order=  IB::Market.order :size => 20000,				# order and contract cannot be used on this level
 																	  :action => the_action,
 																		:account => ACCOUNT
 				end

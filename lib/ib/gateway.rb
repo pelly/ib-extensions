@@ -113,7 +113,7 @@ IB::Gateway.new  serial_array: true (, ...)
 			@connection_parameter = { received: serial_array, port: port, host: host, connect: false, logger: logger, client_id: client_id }
 
 			@account_lock = Mutex.new
-			@watchlists = watchlists
+      @watchlists = watchlists.map{ |b| IB::Symbols.allocate_collection b }
 			@gateway_parameter = { s_m_a: subscribe_managed_accounts,
 													s_a: subscribe_alerts,
 													s_o_m: subscribe_order_messages,
@@ -133,7 +133,7 @@ IB::Gateway.new  serial_array: true (, ...)
 				begin
 					i+=1
 					if connect(100)  # tries to connect for about 2h
-						get_account_data(watchlists: watchlists.map{|b| IB::Symbols.allocate_collection b})  if get_account_data
+						get_account_data()
 						#    request_open_orders() if request_open_orders || get_account_data
 					else
 						@accounts = []   # definitivley reset @accounts
@@ -156,6 +156,10 @@ IB::Gateway.new  serial_array: true (, ...)
 		def active_watchlists
 			@watchlists
 		end
+    def add_watchlist watchlist
+     new_watchlist = IB::Sysmbols.allocate_collection( watchlist ) 
+     @watchlists <<  new_watchlist unless @watchlists.include?( new_watchlist )
+    end
 
 		def get_host
 			"#{@connection_parameter[:host]}: #{@connection_parameter[:port] }"
@@ -371,7 +375,7 @@ Its always active.
 		def initialize_managed_accounts
 			rec_id = tws.subscribe( :ReceiveFA )  do |msg|
 				msg.accounts.each do |a|
-					account_data( a.account  ){| the_account | the_account.update_attribute :alias, a.alias } unless a.alias.blank?
+					account_data( a.account ){| the_account | the_account.update_attribute :alias, a.alias } unless a.alias.blank?
 				end
 				logger.info { "Accounts initialized \n #{@accounts.map( &:to_human  ).join " \n " }" }
 			end

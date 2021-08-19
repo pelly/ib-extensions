@@ -308,7 +308,7 @@ This has to be done manualy in the provided block
 	#
 	# Watchlist => [  contract => [ portfoliopositon] , ... ] ]
 	#
-		def organize_portfolio_positions   the_watchlists
+  def organize_portfolio_positions   the_watchlists= IB::Gateway.current.active_watchlists
 		  the_watchlists = [ the_watchlists ] unless the_watchlists.is_a?(Array)
 			self.focuses = portfolio_values.map do | pw |
 											z=	the_watchlists.map do | w |		

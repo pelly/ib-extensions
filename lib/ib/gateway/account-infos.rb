@@ -24,19 +24,22 @@ Queries the tws for Account- and PortfolioValues
 The parameter can either be the account_id, the IB::Account-Object or 
 an Array of account_id and IB::Account-Objects.
 
-raises an IB::TransmissionError if the account-data are not transmitted in time (1 sec)
+Resets Account#portfolio_values and -account_values
 
-raises an IB::Error if less then 100 items are recieved-
+Raises an IB::TransmissionError if the account-data are not transmitted in time (1 sec)
+
+Raises an IB::Error if less then 100 items are received.
 =end
-	def get_account_data  *accounts,  watchlists: []
+  def get_account_data  *accounts, **compatibily_argument
 
 
-		@account_data_subscription ||=   subscribe_account_updates
+		subscription = subscribe_account_updates( continuously: false )
+    download_end = nil  # declare variable
 
-		accounts =  clients if accounts.empty?
+		accounts = clients if accounts.empty?
 		logger.warn{ "No active account present. AccountData are NOT requested" } if accounts.empty?
-		# Account-infos have to be requested sequencially. 
-		# subsequent (parallel) calls kill the former once on the tws-server-side
+		# Account-infos have to be requested sequentially. 
+		# subsequent (parallel) calls kill the former on the tws-server-side
 		# In addition, there is no need to cancel the subscription of an request, as a new
 		# one overwrites the active one.
 		accounts.each do | ac |
@@ -50,25 +53,28 @@ raises an IB::Error if less then 100 items are recieved-
           q.push true if msg.account_name == account.account
         end
 				# reset account and portfolio-values
-				account.portfolio_values =  []
-				account.account_values =  []
+				account.portfolio_values = []
+				account.account_values = []
+        # Data are gathered asynchron through the active subscription through `subscribe_account_updates`
 				send_message :RequestAccountData, subscribe: true, account_code: account.account
 
-        th =  Thread.new{   sleep 0.5 ; q.close  }
+        th =  Thread.new{   sleep 1 ; q.close  }
         q.pop
 
+        tws.send_message :RequestAccountData, subscribe: false  ## do this only once
         error "No AccountData received", :reader  if q.closed?
+        tws.unsubscribe download_end  unless download_end.nil?
+        tws.unsubscribe subscription
 
-				if watchlists.present?
-					watchlists.each{|w| error "Watchlists must be IB::Symbols--Classes :.#{w.inspect}" unless w.is_a? IB::Symbols }
-					account.organize_portfolio_positions watchlists  
-				end
-				send_message :RequestAccountData, subscribe: false  ## do this only once
-        tws.unsubscribe download_end
+        account.organize_portfolio_positions  unless IB::Gateway.current.active_watchlists.empty?
 			else
 				logger.info{ "#{account.account} :: Using stored AccountData " }
 			end
 		end
+  rescue IB::TransmissionError => e
+        tws.unsubscribe download_end unless download_end.nil?
+        tws.unsubscribe subscription
+        raise
 	end
 
 
@@ -81,10 +87,19 @@ raises an IB::Error if less then 100 items are recieved-
 
 	# The subscription method should called only once per session.
 	# It places subscribers to AccountValue and PortfolioValue Messages, which should remain
-	# active through its session.
-	# 
+	# active through the session.
+  #
+  # The method returns the subscription-number.
+  #
+  # thus
+  #    subscription =  subscribe_account_updates
+  #    #  some code
+  #    IB::Connection.current.unsubscribe subscription
+  #
+  # clears the subscription
+	#
 	
-	def subscribe_account_updates continously: true
+	def subscribe_account_updates continuously: true
 		tws.subscribe( :AccountValue, :PortfolioValue,:AccountDownloadEnd )  do | msg |
 			account_data( msg.account_name ) do | account |   # enter mutex controlled zone
 				case msg
@@ -94,19 +109,19 @@ raises an IB::Error if less then 100 items are recieved-
 					logger.debug { "#{account.account} :: #{msg.account_value.to_human }"}
 				when IB::Messages::Incoming::AccountDownloadEnd 
 					if account.account_values.size > 10
-							# simply don't cancel the subscripton if continously is specified
+							# simply don't cancel the subscription if continuously is specified
 							# the connected flag is set in any case, indicating that valid data are present
-						send_message :RequestAccountData, subscribe: false, account_code: account.account unless continously
+  #          tws.send_message :RequestAccountData, subscribe: false, account_code: account.account unless continuously
 						account.update_attribute :connected, true   ## flag: Account is completely initialized
 						logger.info { "#{account.account} => Count of AccountValues: #{account.account_values.size}"  }
-					else # unreasonable account_data recieved -  request is still active
+					else # unreasonable account_data received -  request is still active
 						error  "#{account.account} => Count of AccountValues too small: #{account.account_values.size}" , :reader 
 					end
 				when IB::Messages::Incoming::PortfolioValue
-						account.contracts.update_or_create  msg.contract
-						account.portfolio_values << msg.portfolio_value 
+          account.contracts << msg.contract unless account.contracts.detect{|y| y.con_id == msg.contract.con_id }
+          account.portfolio_values << msg.portfolio_value 
 #						msg.portfolio_value.account = account
-						# link contract -> portfolio value
+#           # link contract -> portfolio value
 #						account.contracts.find{ |x| x.con_id == msg.contract.con_id }
 #								.portfolio_values
 #								.update_or_create( msg.portfolio_value ) { :account } 

@@ -38,16 +38,16 @@
 
 * Order.auto_adjust
 
-     Auto Adjust implements a simple algotithm to ensure that an order is accepted
+     Auto Adjust implements a simple algorithm to ensure that an order is accepted
     
      It reads `contract_detail.min_tick`. 
     
-     If min_tick < 0.01, the real tick-increments differ fron the min_tick_value
+     If min_tick < 0.01, the real tick-increments differ from the min_tick_value
     
      For J36 (jardines) min tick is 0.001, but the minimal increment is 0.005
-     For Tui1 its the samme, min_tick is 0.00001 , minimal increment ist 0.00005
+     For Tui1 its the same, min_tick is 0.00001 , minimal increment ist 0.00005
     
-     Thus, for min-tick smaller then 0.01, the value is rounded to the next higer digit.
+     Thus, for min-tick smaller then 0.01, the value is rounded to the next higher digit.
      
      | min-tick     |  round     |
      |--------------|------------|
@@ -67,4 +67,25 @@
   If a positive value is used, Order.action is kept 
 
 * Client.place raises an `IB::Symbol Error` if the order is not submitted 
+
+* Included Contract#included_in?( an IB::Account ) and Contract#portfolio_value( an IB::Account )
+
+  Suppose, you want to check, if a complex Contract is included in the Portfolio
+
+  ```ruby
+  s = Straddle.build symbol: Symbols::Index.stoxx, strike=4200, expiry: 20211217
+  puts s.included__in?(IB::Gateway.current.clients.first).to_human
+  =>  "<Straddle ESTX50(4200.0)[Dec 2021]>" 
+  puts s.portfolio_value( IB::Gateway.current.clients.first ).to_human
+  => <PortfolioValue: Uxxxxxx Pos=-4 @ 225.158;Value=-9006.31;PNL=-1812.31 unrealized;<Option: ESTX50 20211217 put 4200.0 DTB EUR>
+ => <PortfolioValue: Uxxxxxxx Pos=-4 @ 99.398;Value=-3975.9;PNL=-61.9 unrealized;<Option: ESTX50 20211217 call 4200.0 DTB EUR>
+
+  ```
+  Both methods are available for IB::Contracts.
+
+* IB::Gateway.current.get_account_data  accepts only one parameter and is not persistent anymore
+   The former second argument (watchlists: ) is defaulted by those initialized through e IB::Gateway.new  (IB::Gateway.current.active_watchlists)  
+   The method now fetches the account- and portfoliodate, initialises Account#contracts, Account#portfolio_values, Account#account_values , Account#focusses and desubscribes from the TWS. (Before, the subscription to AccountData was permanently active).
+
+* IB::Gateway.current.add_watchlist( a symbol ) -- Watchlists can added after initialisation
 
