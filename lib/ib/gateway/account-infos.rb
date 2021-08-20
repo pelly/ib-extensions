@@ -61,16 +61,16 @@ Raises an IB::Error if less then 100 items are received.
         th =  Thread.new{   sleep 10 ; q.close  }
         q.pop
 
-        tws.send_message :RequestAccountData, subscribe: false  ## do this only once
         error "No AccountData received", :reader  if q.closed?
-        tws.unsubscribe download_end  unless download_end.nil?
-        tws.unsubscribe subscription
+        tws.unsubscribe download_end  
 
         account.organize_portfolio_positions  unless IB::Gateway.current.active_watchlists.empty?
 			else
 				logger.info{ "#{account.account} :: Using stored AccountData " }
 			end
 		end
+    tws.send_message :RequestAccountData, subscribe: false  ## do this only once
+    tws.unsubscribe subscription
   rescue IB::TransmissionError => e
         tws.unsubscribe download_end unless download_end.nil?
         tws.unsubscribe subscription
