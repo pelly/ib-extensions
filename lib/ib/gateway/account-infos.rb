@@ -58,7 +58,7 @@ Raises an IB::Error if less then 100 items are received.
         # Data are gathered asynchron through the active subscription through `subscribe_account_updates`
 				send_message :RequestAccountData, subscribe: true, account_code: account.account
 
-        th =  Thread.new{   sleep 1 ; q.close  }
+        th =  Thread.new{   sleep 10 ; q.close  }
         q.pop
 
         tws.send_message :RequestAccountData, subscribe: false  ## do this only once
