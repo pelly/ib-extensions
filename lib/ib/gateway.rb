@@ -157,7 +157,7 @@ IB::Gateway.new  serial_array: true (, ...)
 			@watchlists
 		end
     def add_watchlist watchlist
-     new_watchlist = IB::Sysmbols.allocate_collection( watchlist ) 
+     new_watchlist = IB::Symbols.allocate_collection( watchlist ) 
      @watchlists <<  new_watchlist unless @watchlists.include?( new_watchlist )
     end
 
