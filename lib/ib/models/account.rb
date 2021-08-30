@@ -141,7 +141,11 @@ Example
       puts msg.inspect
       if msg.error_id == the_local_id
         if [ 110, #  The price does not confirm to the minimum price variation for this contract
+            201, # Order rejected, No Trading permissions
+            203, # Security is not allowed for trading
+            325, # Disretionary Orders are not supported for ths combination of oerder-type and exchange
             355, # Order size does not conform to market rule
+            361, 362, 363, 364, # invalid trigger or stop-price
             388,  # Order size x is smaller than the minimum required size of yy.
         ].include? msg.code
           wrong_order =  msg.message
