@@ -1,6 +1,6 @@
-
+require "ib/model"
 module IB
-  class  Contract
+  class  Contract < IB::Model
     def included_in? account
       self if   account.locate_contract(con_id)
     end
